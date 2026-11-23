@@ -12,6 +12,7 @@ Eine Karten-App für Grundschulkinder (Klasse 3 und 4). Die Kinder schalten Ansi
 | Flüsse & Seen | größere Flüsse, Kanäle und Talsperren |
 | Berge & Täler | Höhenkarte (Tiefland grün, Berge braun) und die 8 ausgewählten Berge mit Höhe |
 | Autobahnen / Bundesstraßen | blaue und gelbe Straßen mit Schildern (z. B. „A 4") |
+| Landstraßen | Landesstraßen (L) und Kreisstraßen (K) als weiße Straßen mit Schildern, dazu weitere Durchgangsstraßen: so sieht man, wie man von Ort zu Ort kommt |
 
 Dazu gibt es eine **Ortssuche**, eine **Legende** („Was bedeutet das?"), eine **Schnellauswahl** und ein **Quiz „Wo liegt …?"** mit Sternen (Städte, Gemeinden, Dörfer, Berge, Flüsse).
 
@@ -50,11 +51,17 @@ python3 tools/build_data.py osm --osm gotha-osm.json
 #    Abfrage aus tools/overpass-siedlungen.txt wie oben ausführen und als gotha-siedlungen.json speichern, dann:
 python3 tools/build_data.py siedlungen --osm gotha-siedlungen.json
 
-# 4) Optional: alles in eine einzelne Datei packen
+# 4) Landstraßen (Landes- und Kreisstraßen)
+#    Abfrage aus tools/overpass-landstrassen.txt wie oben ausführen und als gotha-landstrassen.json speichern, dann:
+python3 tools/build_data.py landstrassen --osm gotha-landstrassen.json
+
+# 5) Optional: alles in eine einzelne Datei packen
 python3 tools/einzeldatei_bauen.py
 ```
 
 Schritt 3 braucht die Ergebnisse von Schritt 1 und 2. Er verbindet Wohn-, Gewerbe- und Industrieflächen, die weniger als etwa 90 m auseinanderliegen, zu einer Ortsfläche, rundet die Ecken ab, vereinfacht sie und ordnet sie dem nächsten Ortspunkt zu. Flächen ohne Ort (z. B. einzelne Gewerbegebiete auf dem Feld) werden weggelassen. Die Werte stehen am Anfang von `tools/build_data.py` (`SIED_PUFFER_M`, `SIED_RUNDEN_M`, `SIED_TOL_M` usw.). Das Skript listet am Ende Flächen mit mehreren Orten auf (z. B. Gotha mit Siebleben) und Orte ohne Fläche.
+
+Schritt 4 sammelt die Straßen mit Nummer L oder K und schreibt außerdem alle `secondary`/`tertiary`-Straßen ohne Nummer (meist Ortsdurchfahrten wie „Hauptstraße") als dünne „weitere Straßen", damit die Linien nicht an jedem Ortsschild abreißen. Kurze Straßen (unter 1 km im Landkreis) werden weggelassen. Ein Tippfehler in OpenStreetMap (Eintrag „1026" statt „L 1026") wird in `REF_KORREKTUR` ausgebessert. Am Ende nennt das Skript Orte, die mehr als 300 m von der nächsten Straße entfernt liegen. Die weiteren Straßen erscheinen erst ab einer bestimmten Zoomstufe, die Schilder der Kreisstraßen etwas später als die der Landesstraßen.
 
 Das Skript gibt dabei Kontrollwerte aus und bricht bei Unstimmigkeiten ab: Fläche des Kreises gegen die Summe der Gemeinden, außerdem ein Vergleich der Gemeindenamen mit OpenStreetMap, die Liste der gefundenen Straßen, Gewässer und Seen.
 
@@ -97,7 +104,7 @@ tools/              Werkzeuge zum Erzeugen der Daten
 ## Quellen und Lizenzen
 
 - **Verwaltungsgrenzen:** © GeoBasis-DE / BKG, Datenlizenz Deutschland – Namensnennung – Version 2.0 (<https://www.govdata.de/dl-de/by-2-0>). Bearbeitet: vereinfacht, zwei Gebietsänderungen nachgetragen.
-- **Orte, Straßen, Gewässer, Berge, Ortsumrisse:** © OpenStreetMap-Mitwirkende, Open Database License (<https://www.openstreetmap.org/copyright>). Die Ortsumrisse sind aus Wohn-, Gewerbe- und Industrieflächen berechnet und stark vereinfacht.
+- **Orte, Straßen (auch Landes- und Kreisstraßen), Gewässer, Berge, Ortsumrisse:** © OpenStreetMap-Mitwirkende, Open Database License (<https://www.openstreetmap.org/copyright>). Die Ortsumrisse sind aus Wohn-, Gewerbe- und Industrieflächen berechnet und stark vereinfacht.
 - **Höhenkarte:** Terrain Tiles (Amazon Open Data), u. a. NASA SRTM, Copernicus/EU-DEM – Quellen: <https://github.com/tilezen/joerd/blob/master/docs/attribution.md>.
 - **Kartenbibliothek:** Leaflet © Volodymyr Agafonkin, BSD-2-Clause.
 - **Schriften:** Nunito (© The Nunito Project Authors) und Fredoka (© The Fredoka Project Authors), beide SIL Open Font License 1.1. Lizenztext: `lib/schriften/LICENSE.txt`.

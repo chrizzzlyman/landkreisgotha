@@ -179,7 +179,7 @@
   function glyphMass(e) {
     if (e.band) return { w: 28, h: 16 };
     if (/^\s*<svg/.test(e.z)) { var m = /width="(\d+(?:\.\d+)?)"[^>]*height="(\d+(?:\.\d+)?)"/.exec(e.z); return { w: m ? +m[1] : 26, h: m ? +m[2] : 26 }; }
-    var t = />([^<]*)</.exec(e.z); e.schildText = t ? t[1].replace(/&amp;/g, '&') : ''; e.schildArt = /bundesstr/.test(e.z) ? 'bundesstr' : 'autobahn';
+    var t = />([^<]*)</.exec(e.z); e.schildText = t ? t[1].replace(/&amp;/g, '&') : ''; e.schildArt = /bundesstr/.test(e.z) ? 'bundesstr' : /landstr/.test(e.z) ? 'landstr' : /kreisstr/.test(e.z) ? 'kreisstr' : 'autobahn';
     return { w: Math.round(e.schildText.length * 10 + 22), h: 24 };
   }
   function legendeAnordnen(mctx, eintraege, breite) {
@@ -209,10 +209,11 @@
       if (e.band) { ctx.fillStyle = e.band; rundRechteck(ctx, gx, gy, gm.w, gm.h, 3); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.stroke(); }
       else if (e.img) ctx.drawImage(e.img, gx, gy, gm.w, gm.h);
       else if (e.schildText !== undefined) {
-        var auto = e.schildArt === 'autobahn';
-        rundRechteck(ctx, gx, gy, gm.w, gm.h, 5); ctx.fillStyle = auto ? '#fff' : '#111'; ctx.fill();
-        rundRechteck(ctx, gx + 2, gy + 2, gm.w - 4, gm.h - 4, 3); ctx.fillStyle = auto ? '#1d4ed8' : '#ffd43b'; ctx.fill();
-        ctx.font = '900 14px ' + SCHRIFT; ctx.fillStyle = auto ? '#fff' : '#111'; ctx.textAlign = 'center'; ctx.fillText(e.schildText, gx + gm.w / 2, my + 0.5); ctx.textAlign = 'left';
+        var SCHILD = { autobahn: ['#fff', '#1d4ed8', '#fff'], bundesstr: ['#111', '#ffd43b', '#111'], landstr: ['#4d5d70', '#fff', TINTE], kreisstr: ['#72839a', '#fff', TINTE] };
+        var sc = SCHILD[e.schildArt] || SCHILD.autobahn;       // [Rand, Füllung, Schrift]
+        rundRechteck(ctx, gx, gy, gm.w, gm.h, 5); ctx.fillStyle = sc[0]; ctx.fill();
+        rundRechteck(ctx, gx + 2, gy + 2, gm.w - 4, gm.h - 4, 3); ctx.fillStyle = sc[1]; ctx.fill();
+        ctx.font = '900 14px ' + SCHRIFT; ctx.fillStyle = sc[2]; ctx.textAlign = 'center'; ctx.fillText(e.schildText, gx + gm.w / 2, my + 0.5); ctx.textAlign = 'left';
       }
       ctx.font = '700 14px ' + SCHRIFT; ctx.fillStyle = TINTE; ctx.fillText(e.t, gx + gm.w + 8, my + 0.5);
     });

@@ -25,7 +25,13 @@ Zwei Schritte (einzeln oder zusammen aufrufbar):
      Voraussetzung: data/grenzen.js und data/osm.js sind schon gebaut. Die Flaechen werden
      zu groben Ortsumrissen verbunden, geglaettet und den Orten aus osm.js zugeordnet.
 
-Ausgabe: data/grenzen.js, data/osm.js und data/siedlungen.js   (als  window.GOTHA_... = {...};)
+  4) Landstrassen (Landesstrassen L und Kreisstrassen K, dazu weitere Durchgangsstrassen):
+         python3 tools/build_data.py landstrassen --osm gotha-landstrassen.json
+
+     Die Eingabedatei entsteht mit der Abfrage in tools/overpass-landstrassen.txt.
+     Voraussetzung: data/grenzen.js ist schon gebaut.
+
+Ausgabe: data/grenzen.js, data/osm.js, data/siedlungen.js und data/landstrassen.js   (als  window.GOTHA_... = {...};)
 Die Dateien sind absichtlich .js statt .json, damit die Seite auch per Doppelklick
 (file://) funktioniert.
 
@@ -92,6 +98,14 @@ SIED_LOCH_MIN_M2 = 25000.0
 SIED_NAH_STADT_M = 1000.0
 SIED_NAH_DORF_M = 450.0
 SIED_LANDUSE = ("residential", "commercial", "retail", "industrial")
+
+# Landstrassen: nummerierte Landesstrassen (L) und Kreisstrassen (K) bekommen ein Schild.
+# Ausserdem werden secondary/tertiary-Strassen OHNE L/K-Nummer als "weitere Strassen" gezeichnet
+# (meist die Ortsdurchfahrten, z. B. "Hauptstrasse"), damit die Strassen durch die Doerfer nicht abreissen.
+LAND_MIN_KM = 1.0
+TOL_LAND_M = 12.0
+# Falsche Eintraege in OSM: ref ohne Buchstaben (die Friedrichrodaer Strasse bei Waltershausen ist die L 1026)
+REF_KORREKTUR = {"1026": "L 1026"}
 
 TO_WGS = Transformer.from_crs(25832, 4326, always_xy=True)
 TO_UTM = Transformer.from_crs(4326, 25832, always_xy=True)
@@ -312,7 +326,7 @@ def zu_utm_linie(punkte):
     return LineString(list(zip(xs, ys)))
 
 
-def linien_zu_liste(geom_utm, tol):
+def linien_zu_liste(geom_utm, tol, min_laenge=60):
     """Geometrie (Linien) -> Liste von [[lon,lat],...] vereinfacht und gerundet."""
     teile = []
     if geom_utm.is_empty:
@@ -323,7 +337,7 @@ def linien_zu_liste(geom_utm, tol):
         teile = [g for g in geom_utm.geoms if g.geom_type == "LineString"]
     out = []
     for t in teile:
-        if t.length < 60:
+        if t.length < min_laenge:
             continue
         t = t.simplify(tol, preserve_topology=False)
         lon, lat = TO_WGS.transform(*zip(*t.coords))
@@ -674,6 +688,79 @@ def baue_siedlungen(osm_pfad):
     print("Weggelassen: Flaechen ohne Ort, zusammen %.0f ha" % (weg_flaeche / 10000))
 
 
+# ----------------------------------------------------------------- Schritt 4: Landstrassen
+def norm_landref(ref):
+    """'L 1026' -> ('L','L 1026'), 'K12' -> ('K','K 12'), 'L 2147N' -> ('L','L 2147'); sonst None"""
+    ref = REF_KORREKTUR.get((ref or "").strip(), ref or "")
+    for teil in re.split(r"[;,]", ref):
+        m = re.match(r"^\s*([LK])\s?(\d+)[A-Za-z]?\s*$", teil)
+        if m:
+            return m.group(1), "%s %s" % (m.group(1), m.group(2))
+    return None
+
+
+def baue_landstrassen(osm_pfad):
+    kreis = utm(shape(lade_js("grenzen.js")["kreis"]["geometry"]))
+    kreis_clip = kreis.buffer(150)
+    daten = json.load(open(osm_pfad, encoding="utf-8"))
+    el = daten["elements"]
+    stand = (daten.get("osm3s") or {}).get("timestamp_osm_base", "unbekannt")
+    print("OSM-Elemente:", len(el), " Datenstand:", stand)
+
+    nummeriert, weitere, andere_refs = defaultdict(list), [], set()
+    for e in el:
+        if e["type"] != "way" or not e.get("geometry") or len(e["geometry"]) < 2:
+            continue
+        t = e.get("tags", {})
+        hw = t.get("highway")
+        r = norm_landref(t.get("ref"))
+        linie = zu_utm_linie(geom_aus_punkten(e["geometry"]))
+        if r:
+            nummeriert[r].append(linie)
+        elif hw in ("secondary", "tertiary"):
+            weitere.append(linie)
+            if t.get("ref"):
+                andere_refs.add(t["ref"])
+    if andere_refs:
+        print("  HINWEIS: secondary/tertiary mit anderem ref (als weitere Strasse behandelt):", sorted(andere_refs))
+
+    strassen = []
+    for (klasse, ref), linien in sorted(nummeriert.items(), key=lambda kv: (kv[0][0], int(kv[0][1].split()[1]))):
+        vereint = verbinde(linien)
+        teile = linien_zu_liste(vereint.intersection(kreis_clip), TOL_LAND_M, min_laenge=40)
+        laenge = round(vereint.intersection(kreis).length / 1000, 1)
+        if teile and laenge >= LAND_MIN_KM:
+            strassen.append({"r": ref, "k": klasse, "c": teile, "km": laenge})
+        else:
+            print("  weggelassen (zu kurz im Landkreis): %s %.1f km" % (ref, laenge))
+
+    teile_w = linien_zu_liste(verbinde(weitere).intersection(kreis_clip), TOL_LAND_M, min_laenge=25)
+    ergebnis = {"stand": stand[:10], "quelle": "Landesstraßen, Kreisstraßen: © OpenStreetMap-Mitwirkende (ODbL), vereinfacht",
+                "strassen": strassen, "weitere": teile_w}
+    schreibe_js("GOTHA_LANDSTRASSEN", ergebnis, "landstrassen.js")
+
+    print("\nLandesstrassen: %d, Kreisstrassen: %d, weitere Strassenstuecke: %d" % (
+        sum(1 for s in strassen if s["k"] == "L"), sum(1 for s in strassen if s["k"] == "K"), len(teile_w)))
+    print("Landesstrassen:", [(s["r"], s["km"]) for s in strassen if s["k"] == "L"])
+    print("Kreisstrassen:", [(s["r"], s["km"]) for s in strassen if s["k"] == "K"])
+    print("Gesamtlaenge L %.0f km, K %.0f km" % (sum(s["km"] for s in strassen if s["k"] == "L"), sum(s["km"] for s in strassen if s["k"] == "K")))
+
+    # Kontrolle: Wie weit ist jeder Ort vom naechsten Strassenstueck (A/B/L/K/weitere) entfernt?
+    ab = []
+    for s in lade_js("osm.js")["strassen"]:
+        for l in s["c"]:
+            ab.append(zu_utm_linie(l))
+    netz = unary_union(ab + [vereint for vereint in [verbinde(l) for l in nummeriert.values()]] + [verbinde(weitere)])
+    fern = []
+    for o in lade_js("osm.js")["orte"]:
+        if o["t"] in ("stadt", "dorf", "weiler"):
+            d = netz.distance(Point(*TO_UTM.transform(*o["p"])))
+            if d > 300:
+                fern.append((o["n"], round(d)))
+    fern.sort(key=lambda x: -x[1])
+    print("Orte mehr als 300 m vom naechsten Strassenstueck entfernt (%d):" % len(fern), fern)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -683,7 +770,9 @@ if __name__ == "__main__":
     o.add_argument("--osm", required=True)
     si = sp.add_parser("siedlungen")
     si.add_argument("--osm", required=True)
-    for q in (g, o, si):
+    la = sp.add_parser("landstrassen")
+    la.add_argument("--osm", required=True)
+    for q in (g, o, si, la):
         q.add_argument("--out", default=DATA, help="Ausgabeordner (Standard: data/)")
     a = ap.parse_args()
     DATA = a.out
@@ -691,5 +780,7 @@ if __name__ == "__main__":
         baue_grenzen(a.bkg_dir)
     elif a.cmd == "osm":
         baue_osm(a.osm)
-    else:
+    elif a.cmd == "siedlungen":
         baue_siedlungen(a.osm)
+    else:
+        baue_landstrassen(a.osm)

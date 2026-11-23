@@ -1,0 +1,7 @@
+[out:json][timeout:180];
+area(3600062468)->.a;
+(
+  way["highway"~"^(secondary|tertiary|unclassified)$"](area.a);
+  way["highway"~"^(trunk|primary)$"]["ref"~"^[LK] ?[0-9]"](area.a);
+);
+out geom;
