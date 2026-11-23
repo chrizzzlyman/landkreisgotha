@@ -50,6 +50,9 @@ def js(m):
     return "<script>\n" + lies(pfad).replace("</script", "<\\/script") + "\n</script>"
 
 
+# Die Einzeldatei wird per Doppelklick geoeffnet (file://): Manifest, App-Symbol und Service Worker gibt es dort nicht.
+html = re.sub(r'<link rel="(?:manifest|apple-touch-icon)"[^>]*>\n?', '', html)
+html = re.sub(r'<script src="js/pwa\.js"></script>\n?', '', html)
 html = re.sub(r'<link rel="stylesheet" href="([^"]+)">', css, html)
 html = re.sub(r'<script src="([^"]+)"></script>', js, html)
 with open(ziel, "w", encoding="utf-8") as f:

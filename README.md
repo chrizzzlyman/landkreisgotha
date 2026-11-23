@@ -25,11 +25,21 @@ Alle Symbole sind eingebaute Vektorgrafiken und die Schriften sind mitgeliefert.
 1. Auf github.com anmelden und oben rechts auf **+ → New repository** klicken.
 2. Name eingeben, zum Beispiel `gotha-karte`. **Public** wählen und **Create repository** klicken.
 3. Auf der neuen Seite auf **uploading an existing file** klicken.
-4. **Den Inhalt dieses Ordners** (nicht den Ordner selbst) in das Fenster ziehen: `index.html`, `css`, `js`, `lib`, `data`, `tools`, `README.md` und die versteckte Datei `.nojekyll`. Danach **Commit changes** klicken.
+4. **Den Inhalt dieses Ordners** (nicht den Ordner selbst) in das Fenster ziehen: `index.html`, `sw.js`, `manifest.webmanifest`, `css`, `js`, `lib`, `data`, `icons`, `tools`, `README.md` und die versteckte Datei `.nojekyll`. Danach **Commit changes** klicken.
 5. Oben auf **Settings → Pages**. Bei „Branch" `main` und `/ (root)` wählen, dann **Save**.
 6. Nach ein bis zwei Minuten steht dort der Link: `https://DEINNAME.github.io/gotha-karte/`
 
 Den Link kannst du auf Tablets oder dem Whiteboard öffnen. Zum Beispiel als Lesezeichen oder als QR-Code.
+
+## Als App auf dem Handy oder Tablet installieren
+
+Die Karte ist eine *installierbare Web-App*. Das geht **nur über den GitHub-Pages-Link** (`https://…github.io/…`), nicht mit der Einzeldatei und nicht per Doppelklick auf `index.html`.
+
+- **Android (Chrome):** Link öffnen. Unten im Menü der Karte erscheint der gelbe Knopf „App auf diesem Gerät installieren". Alternativ im Chrome-Menü (drei Punkte) „App installieren" oder „Zum Startbildschirm hinzufügen" wählen. Danach liegt das Symbol der Karte wie jede andere App auf dem Startbildschirm und öffnet sich im Vollbild.
+- **iPhone und iPad (Safari):** Link öffnen, auf das Teilen-Symbol tippen und „Zum Home-Bildschirm" wählen.
+- **Ohne Internet:** Nach dem ersten Öffnen mit Internet startet die App auch ohne Netz. Die Höhenkarte gibt es offline nur für Gegenden, die man schon einmal angesehen hat. Mit Internet holt sich die App beim Start immer die neuesten Dateien.
+
+Eine Datei für den Play Store (APK) ist nicht enthalten. Dafür müsste man die Web-App zusätzlich verpacken, zum Beispiel mit PWABuilder.
 
 **Ohne GitHub:** `index.html` per Doppelklick öffnen oder `gotha-karte-einzeldatei.html` verschicken. Beides funktioniert. Nur die **Höhenkarte braucht Internet**, alles andere läuft auch ohne.
 
@@ -95,6 +105,10 @@ js/relief.js        Höhenkarte (färbt Höhenkacheln kindgerecht ein)
 js/quiz.js          Quiz "Wo liegt ...?"
 js/symbole.js       Alle Symbole als Vektorgrafik (kein Emoji nötig)
 js/export.js        Karte als JPEG-Bild speichern
+js/pwa.js           Installierbare Web-App (Anmeldung des Service Workers, Installieren-Knopf)
+sw.js               Service Worker: Start ohne Internet, Höhenkacheln merken
+manifest.webmanifest  App-Name, Farben und Symbole für die Installation
+icons/              App-Symbole (aus der Kreisgrenze gezeichnet)
 data/               Kartendaten (erzeugt, nicht von Hand ändern)
 lib/leaflet/        Kartenbibliothek Leaflet 1.9.4 (BSD-2-Clause)
 lib/schriften/      Schriften Nunito und Fredoka (SIL Open Font License)
