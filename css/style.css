@@ -109,19 +109,20 @@ a { color: var(--blau); }
 #suchtreffer li.leer { cursor: default; color: var(--tinte-2); font-weight: 700; }
 
 /* Ebenen: Kacheln zum Ein- und Ausschalten */
-#ebenenliste { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.gruppentitel { grid-column: 1 / -1; margin: 6px 2px -2px; font-family: var(--anzeige); font-weight: 500; font-size: .98rem; color: var(--tinte-2); }
+#ebenenliste { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gruppentitel { grid-column: 1 / -1; margin: 4px 2px -3px; font-family: var(--anzeige); font-weight: 500; font-size: .98rem; color: var(--tinte-2); }
 .gruppentitel:first-child { margin-top: 0; }
 .ebene {
   position: relative;
   display: flex; align-items: center; gap: 9px;
-  min-height: 58px; padding: 7px 10px 7px 7px;
+  min-height: 50px; padding: 5px 10px 5px 6px;
   border: 2px solid var(--linie); border-radius: 18px; background: var(--papier); color: var(--tinte);
   font-size: .98rem; font-weight: 800; text-align: left; line-height: 1.12;
   transition: background-color .15s, border-color .15s, color .15s, transform .08s;
 }
+.ebene.breit { grid-column: 1 / -1; }
 .ebene .bild {
-  flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
   background: var(--ebene-hell); color: var(--ebene-farbe); transition: background-color .15s, color .15s;
 }
 .ebene .bild.schildbild { width: 48px; height: 36px; border-radius: 0; background: none; }
@@ -182,13 +183,24 @@ a { color: var(--blau); }
 
 /* Knöpfe oben rechts: ganzer Landkreis + Kompass */
 #kartenknoepfe { position: absolute; right: 14px; top: 14px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
-#heimknopf {
+#heimknopf, #bildknopf {
   pointer-events: auto; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px 0 14px;
   border: 0; border-radius: 24px; background: var(--papier); color: var(--tinte); box-shadow: var(--schatten);
   font-family: var(--anzeige); font-weight: 500; font-size: 1.02rem;
 }
-#heimknopf:hover { background: var(--himmel); }
-#heimknopf:active { transform: scale(.96); }
+#heimknopf:hover, #bildknopf:hover, #bildknopf[aria-expanded="true"] { background: var(--himmel); }
+#heimknopf:active, #bildknopf:active { transform: scale(.96); }
+#bildbox { position: relative; pointer-events: auto; align-self: flex-end; }
+#bildmenue {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: 264px; padding: 8px; display: grid; gap: 6px;
+  background: var(--papier); border-radius: 20px; box-shadow: var(--schatten), 0 0 0 1px rgba(22, 48, 74, .06);
+}
+#bildmenue[hidden] { display: none; }
+.bm-titel { margin: 4px 8px 0; font-family: var(--anzeige); font-weight: 500; font-size: .95rem; color: var(--tinte-2); }
+#bildmenue button { display: flex; flex-direction: column; gap: 1px; padding: 9px 12px; border: 0; border-radius: 14px; background: var(--himmel); color: var(--tinte); text-align: left; }
+#bildmenue button:hover { background: #d3e5f4; }
+#bildmenue button strong { font-family: var(--anzeige); font-weight: 600; font-size: 1.05rem; }
+#bildmenue button small { font-weight: 700; font-size: .82rem; color: var(--tinte-2); }
 #kompass { filter: drop-shadow(0 2px 4px rgba(22, 48, 74, .3)); }
 
 /* Fenster über der Karte */
@@ -343,8 +355,8 @@ a { color: var(--blau); }
 
 /* ---------- schmale Bildschirme (Tablet hochkant, Handy) ---------- */
 @media (min-width: 921px) and (max-width: 1180px) {
-  #heimknopf { padding: 0; width: 48px; justify-content: center; }
-  #heimknopf .hk-text { display: none; }
+  #heimknopf, #bildknopf { padding: 0; width: 48px; justify-content: center; }
+  #heimknopf .hk-text, #bildknopf .hk-text { display: none; }
   #quizleiste { right: 76px; }
 }
 @media (max-width: 920px) {
@@ -371,8 +383,9 @@ a { color: var(--blau); }
   #kartenknoepfe { top: auto; bottom: 36px; right: 10px; }
   #kartenknoepfe #kompass { order: -1; }
   #kompass svg { width: 46px; height: 46px; }
-  #heimknopf { padding: 0; width: 48px; justify-content: center; }
-  #heimknopf .hk-text { display: none; }
+  #heimknopf, #bildknopf { padding: 0; width: 48px; justify-content: center; }
+  #heimknopf .hk-text, #bildknopf .hk-text { display: none; }
+  #bildmenue { top: auto; bottom: calc(100% + 8px); width: min(264px, calc(100vw - 24px)); }
   #legende { bottom: 30px; }
 }
 @media (max-width: 560px) {

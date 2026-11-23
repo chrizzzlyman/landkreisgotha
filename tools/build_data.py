@@ -18,7 +18,14 @@ Zwei Schritte (einzeln oder zusammen aufrufbar):
      Die Eingabedatei entsteht mit der Abfrage in tools/overpass-abfrage.txt
      (Overpass-API, Ausgabeformat JSON, "out geom").
 
-Ausgabe: data/grenzen.js  und  data/osm.js   (als  window.GOTHA_... = {...};)
+  3) Umrisse der Orte (Wohn-, Gewerbe- und Industrieflaechen aus OpenStreetMap):
+         python3 tools/build_data.py siedlungen --osm gotha-siedlungen.json
+
+     Die Eingabedatei entsteht mit der Abfrage in tools/overpass-siedlungen.txt.
+     Voraussetzung: data/grenzen.js und data/osm.js sind schon gebaut. Die Flaechen werden
+     zu groben Ortsumrissen verbunden, geglaettet und den Orten aus osm.js zugeordnet.
+
+Ausgabe: data/grenzen.js, data/osm.js und data/siedlungen.js   (als  window.GOTHA_... = {...};)
 Die Dateien sind absichtlich .js statt .json, damit die Seite auch per Doppelklick
 (file://) funktioniert.
 
@@ -72,6 +79,19 @@ BERGE_LISTE = [
 BACH_MIN_KM = 8.0
 FLUSS_MIN_KM = 3.0
 SEE_MIN_HA = 3.0
+
+# Ortsumrisse: Flaechen, die naeher als 2 x SIED_PUFFER_M beieinander liegen, werden eine Ortsflaeche.
+# Danach wird um SIED_GLAETTEN_M wieder verkleinert (das rundet die Ecken), vereinfacht und
+# werden kleine Loecher gefuellt. Ein Ort gehoert zur naechsten Flaeche, wenn sein Punkt darin liegt
+# oder hoechstens SIED_NAH_*_M entfernt ist. Flaechen ohne Ort werden weggelassen.
+SIED_PUFFER_M = 45.0
+SIED_GLAETTEN_M = 30.0
+SIED_RUNDEN_M = 25.0          # Ecken runden: erst Luecken schliessen, dann Zacken abschneiden
+SIED_TOL_M = 22.0
+SIED_LOCH_MIN_M2 = 25000.0
+SIED_NAH_STADT_M = 1000.0
+SIED_NAH_DORF_M = 450.0
+SIED_LANDUSE = ("residential", "commercial", "retail", "industrial")
 
 TO_WGS = Transformer.from_crs(25832, 4326, always_xy=True)
 TO_UTM = Transformer.from_crs(4326, 25832, always_xy=True)
@@ -564,6 +584,96 @@ def baue_osm(osm_pfad):
     print("  nur in BKG :", [n for n in mein if n not in admin8])
 
 
+# ----------------------------------------------------------------- Schritt 3: Ortsumrisse
+def lade_js(dateiname):
+    """Liest eine erzeugte data/*.js-Datei wieder ein."""
+    pfad = os.path.join(DATA, dateiname)
+    if not os.path.exists(pfad):
+        sys.exit("FEHLER: %s fehlt - bitte zuerst die Schritte 'grenzen' und 'osm' ausfuehren." % pfad)
+    text = open(pfad, encoding="utf-8").read()
+    start = text.index("=", text.index("window.")) + 1
+    return json.loads(text[start:text.rindex(";")])
+
+
+def baue_siedlungen(osm_pfad):
+    kreis = utm(shape(lade_js("grenzen.js")["kreis"]["geometry"]))
+    orte = [o for o in lade_js("osm.js")["orte"] if o["t"] in ("stadt", "dorf", "weiler")]
+    daten = json.load(open(osm_pfad, encoding="utf-8"))
+    el = daten["elements"]
+    stand = (daten.get("osm3s") or {}).get("timestamp_osm_base", "unbekannt")
+    print("OSM-Elemente:", len(el), " Datenstand:", stand)
+
+    flaechen, offen = [], 0
+    for e in el:
+        if e.get("tags", {}).get("landuse") not in SIED_LANDUSE:
+            continue
+        g = None
+        if e["type"] == "way" and e.get("geometry"):
+            pts = geom_aus_punkten(e["geometry"])
+            if len(pts) >= 4 and pts[0] == pts[-1]:
+                g = Polygon(zu_utm_linie(pts))
+            else:
+                offen += 1
+        elif e["type"] == "relation":
+            g = polygon_aus_relation(e)
+        if g is None or g.is_empty:
+            continue
+        if not g.is_valid:
+            g = g.buffer(0)
+        flaechen.append(g)
+    print("Flaechen: %d (nicht geschlossene Linien uebersprungen: %d)" % (len(flaechen), offen))
+
+    vereint = unary_union([f.buffer(SIED_PUFFER_M) for f in flaechen]).buffer(-SIED_GLAETTEN_M)
+    vereint = vereint.buffer(SIED_RUNDEN_M).buffer(-2 * SIED_RUNDEN_M).buffer(SIED_RUNDEN_M)
+    vereint = vereint.intersection(kreis.buffer(150))
+    teile = [t for t in (vereint.geoms if hasattr(vereint, "geoms") else [vereint]) if t.geom_type == "Polygon" and not t.is_empty]
+    print("Zusammengefuehrte Flaechen:", len(teile))
+
+    # Orte den Flaechen zuordnen (jeder Ort der naechsten Flaeche in Reichweite)
+    zugeordnet = defaultdict(list)
+    ohne = []
+    for o in orte:
+        pt = Point(*TO_UTM.transform(*o["p"]))
+        grenze = SIED_NAH_STADT_M if o["t"] == "stadt" else SIED_NAH_DORF_M
+        d, i = min(((t.distance(pt), i) for i, t in enumerate(teile)), default=(1e9, None))
+        if i is not None and d <= grenze:
+            zugeordnet[i].append(o)
+        else:
+            ohne.append(o["n"])
+
+    ausgabe, weg_flaeche = [], 0.0
+    reihenfolge = {"stadt": 0, "dorf": 1, "weiler": 2}
+    for i, t in enumerate(teile):
+        if i not in zugeordnet:
+            weg_flaeche += t.area
+            continue
+        ortsliste = sorted(zugeordnet[i], key=lambda o: (reihenfolge[o["t"]], -(o.get("e") or 0), o["n"]))
+        art = "stadt" if ortsliste[0]["t"] == "stadt" else "dorf"
+        # Loecher kleiner als SIED_LOCH_MIN_M2 fuellen, dann vereinfachen
+        loecher = [r for r in t.interiors if Polygon(r).area >= SIED_LOCH_MIN_M2]
+        t = Polygon(t.exterior, loecher).simplify(SIED_TOL_M, preserve_topology=True)
+        if t.is_empty:
+            continue
+        ausgabe.append({"t": art, "n": ortsliste[0]["n"], "o": [o["n"] for o in ortsliste],
+                        "ha": round(t.area / 10000, 1), "f": geojson_geom(wgs(t))})
+    ausgabe.sort(key=lambda f: (f["t"] != "stadt", -f["ha"]))
+
+    ergebnis = {"stand": stand[:10], "quelle": "Ortsumrisse: Wohn-, Gewerbe- und Industrieflächen © OpenStreetMap-Mitwirkende (ODbL), vereinfacht",
+                "flaechen": ausgabe}
+    schreibe_js("GOTHA_SIEDLUNGEN", ergebnis, "siedlungen.js")
+
+    print("\nOrtsflaechen: %d (Stadt %d, Dorf %d), zusammen %.0f ha" % (
+        len(ausgabe), sum(1 for f in ausgabe if f["t"] == "stadt"), sum(1 for f in ausgabe if f["t"] == "dorf"),
+        sum(f["ha"] for f in ausgabe)))
+    print("Die groessten:", [(f["n"], f["ha"]) for f in ausgabe[:12]])
+    mehrere = [(f["n"], f["o"]) for f in ausgabe if len(f["o"]) > 1]
+    print("Flaechen mit mehreren Orten (%d):" % len(mehrere))
+    for n, o in mehrere:
+        print("   ", n, "<-", o)
+    print("Orte OHNE Flaeche (%d):" % len(ohne), ohne)
+    print("Weggelassen: Flaechen ohne Ort, zusammen %.0f ha" % (weg_flaeche / 10000))
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -571,11 +681,15 @@ if __name__ == "__main__":
     g.add_argument("--bkg-dir", required=True)
     o = sp.add_parser("osm")
     o.add_argument("--osm", required=True)
-    for q in (g, o):
+    si = sp.add_parser("siedlungen")
+    si.add_argument("--osm", required=True)
+    for q in (g, o, si):
         q.add_argument("--out", default=DATA, help="Ausgabeordner (Standard: data/)")
     a = ap.parse_args()
     DATA = a.out
     if a.cmd == "grenzen":
         baue_grenzen(a.bkg_dir)
-    else:
+    elif a.cmd == "osm":
         baue_osm(a.osm)
+    else:
+        baue_siedlungen(a.osm)

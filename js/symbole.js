@@ -7,6 +7,8 @@
   // Alle Symbole sind auf einem 24×24-Raster gezeichnet. Linien: currentColor, Füllungen: "f"-Elemente.
   var P = {
     kreis: '<path d="M7.5 3.8 14 3l5.6 4.3.9 6.4-3.6 5.9-6.6 1.7L4.6 16 3.4 9.6z" fill="currentColor" fill-opacity=".22"/>',
+    umriss: '<path d="M4.6 9.2C4.4 5.8 8.4 4 12.4 4.5c3.8.5 7 2 7.1 5.3.1 2.3-.7 3.2-.5 5.4.2 3-2.7 5-6.4 5-4.7 0-7.4-1.5-7.8-4.3-.3-2.2.9-3.2-.2-5.7z" fill="currentColor" fill-opacity=".2"/><circle cx="12" cy="12.4" r="1.9" fill="currentColor" stroke="none"/>',
+    kamera: '<path d="M3.5 8.2h3.4l1.5-2.4h7.2l1.5 2.4h3.4v11H3.5z" fill="currentColor" fill-opacity=".14"/><circle cx="12" cy="13.4" r="3.6"/>',
     gemeinden: '<path d="M3.5 7.8 9 3.6l7 .5 4.5 5-1.5 8-8 3.6-6.5-5z" fill="currentColor" fill-opacity=".16"/><path d="M9 3.6l2.6 7L4.5 15.6M11.6 10.6l7.6 1M11.6 10.6 11 20.6"/>',
     stadt: '<path d="M3.5 20.5V9.5L8.5 7v13.5M8.5 20.5V4.5h7.5v16M16 20.5v-9l4.5 1.5v7.5M2.5 20.5h19"/><path d="M11 8.5h2.5M11 12h2.5M11 15.5h2.5" stroke-width="1.8"/>',
     dorf: '<path d="M3.5 11.5 12 4.5l8.5 7M6 10v10h12V10M10 20v-5.5h4V20"/><path d="M16.5 7.5V4.8h2v4.2" stroke-width="1.8"/>',

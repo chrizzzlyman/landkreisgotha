@@ -8,11 +8,14 @@ Eine Karten-App für Grundschulkinder (Klasse 3 und 4). Die Kinder schalten Ansi
 | Gemeinden | Umrissgrenzen aller 29 Gemeinden, bunt und beschriftet |
 | Städte | die 5 Städte des Landkreises, dazu Nachbarstädte wie Erfurt und Eisenach |
 | Dörfer | Dörfer und Ortsteile mit Namen |
+| Umrisse der Orte | grobe Umrisse der Siedlungsflächen: Städte rot, Dörfer orange (lässt sich mit oder ohne die Ortspunkte zeigen) |
 | Flüsse & Seen | größere Flüsse, Kanäle und Talsperren |
 | Berge & Täler | Höhenkarte (Tiefland grün, Berge braun) und die 8 ausgewählten Berge mit Höhe |
 | Autobahnen / Bundesstraßen | blaue und gelbe Straßen mit Schildern (z. B. „A 4") |
 
 Dazu gibt es eine **Ortssuche**, eine **Legende** („Was bedeutet das?"), eine **Schnellauswahl** und ein **Quiz „Wo liegt …?"** mit Sternen (Städte, Gemeinden, Dörfer, Berge, Flüsse).
+
+**Als Bild speichern:** Der Knopf mit dem Fotoapparat (oben rechts auf der Karte) speichert die gerade sichtbare Karte als JPEG-Datei, wahlweise mit Titel und Legende oder nur die Karte. Maßstab, Nordpfeil und Quellenangabe sind immer dabei. Das Bild entsteht im Browser, es wird nichts hochgeladen, und es geht auch ohne Internet (nur die Höhenkarte selbst braucht Internet).
 
 Alle Symbole sind eingebaute Vektorgrafiken und die Schriften sind mitgeliefert. Dadurch sieht die App auf jedem Gerät gleich aus, auch ohne Emoji-Schrift und ohne Internet.
 
@@ -43,9 +46,15 @@ python3 tools/build_data.py grenzen --bkg-dir package
 #    "Rohdaten direkt von Overpass API" herunterladen als gotha-osm.json, dann:
 python3 tools/build_data.py osm --osm gotha-osm.json
 
-# 3) Optional: alles in eine einzelne Datei packen
+# 3) Umrisse der Orte (Siedlungsflächen aus OpenStreetMap)
+#    Abfrage aus tools/overpass-siedlungen.txt wie oben ausführen und als gotha-siedlungen.json speichern, dann:
+python3 tools/build_data.py siedlungen --osm gotha-siedlungen.json
+
+# 4) Optional: alles in eine einzelne Datei packen
 python3 tools/einzeldatei_bauen.py
 ```
+
+Schritt 3 braucht die Ergebnisse von Schritt 1 und 2. Er verbindet Wohn-, Gewerbe- und Industrieflächen, die weniger als etwa 90 m auseinanderliegen, zu einer Ortsfläche, rundet die Ecken ab, vereinfacht sie und ordnet sie dem nächsten Ortspunkt zu. Flächen ohne Ort (z. B. einzelne Gewerbegebiete auf dem Feld) werden weggelassen. Die Werte stehen am Anfang von `tools/build_data.py` (`SIED_PUFFER_M`, `SIED_RUNDEN_M`, `SIED_TOL_M` usw.). Das Skript listet am Ende Flächen mit mehreren Orten auf (z. B. Gotha mit Siebleben) und Orte ohne Fläche.
 
 Das Skript gibt dabei Kontrollwerte aus und bricht bei Unstimmigkeiten ab: Fläche des Kreises gegen die Summe der Gemeinden, außerdem ein Vergleich der Gemeindenamen mit OpenStreetMap, die Liste der gefundenen Straßen, Gewässer und Seen.
 
@@ -78,6 +87,7 @@ js/beschriftung.js  Beschriftungen ohne Überlappung
 js/relief.js        Höhenkarte (färbt Höhenkacheln kindgerecht ein)
 js/quiz.js          Quiz "Wo liegt ...?"
 js/symbole.js       Alle Symbole als Vektorgrafik (kein Emoji nötig)
+js/export.js        Karte als JPEG-Bild speichern
 data/               Kartendaten (erzeugt, nicht von Hand ändern)
 lib/leaflet/        Kartenbibliothek Leaflet 1.9.4 (BSD-2-Clause)
 lib/schriften/      Schriften Nunito und Fredoka (SIL Open Font License)
@@ -87,7 +97,7 @@ tools/              Werkzeuge zum Erzeugen der Daten
 ## Quellen und Lizenzen
 
 - **Verwaltungsgrenzen:** © GeoBasis-DE / BKG, Datenlizenz Deutschland – Namensnennung – Version 2.0 (<https://www.govdata.de/dl-de/by-2-0>). Bearbeitet: vereinfacht, zwei Gebietsänderungen nachgetragen.
-- **Orte, Straßen, Gewässer, Berge:** © OpenStreetMap-Mitwirkende, Open Database License (<https://www.openstreetmap.org/copyright>).
+- **Orte, Straßen, Gewässer, Berge, Ortsumrisse:** © OpenStreetMap-Mitwirkende, Open Database License (<https://www.openstreetmap.org/copyright>). Die Ortsumrisse sind aus Wohn-, Gewerbe- und Industrieflächen berechnet und stark vereinfacht.
 - **Höhenkarte:** Terrain Tiles (Amazon Open Data), u. a. NASA SRTM, Copernicus/EU-DEM – Quellen: <https://github.com/tilezen/joerd/blob/master/docs/attribution.md>.
 - **Kartenbibliothek:** Leaflet © Volodymyr Agafonkin, BSD-2-Clause.
 - **Schriften:** Nunito (© The Nunito Project Authors) und Fredoka (© The Fredoka Project Authors), beide SIL Open Font License 1.1. Lizenztext: `lib/schriften/LICENSE.txt`.

@@ -34,6 +34,7 @@
   var STRASSEN = (O && O.strassen) || [];
   var WASSER = (O && O.wasser) || [];
   var SEEN = (O && O.seen) || [];
+  var SIEDLUNG = (window.GOTHA_SIEDLUNGEN && window.GOTHA_SIEDLUNGEN.flaechen) || [];
 
   var ZIELE = {};          // id -> {art, kat, name, typ:'punkt'|'flaeche'|'linie', ll, feature, c, daten}
   function registriere(id, z) { z.id = id; ZIELE[id] = z; return z; }
@@ -50,6 +51,7 @@
     { id: 'gemeinden', gruppe: 'Grenzen', sym: 'gemeinden', titel: 'Gemeinden', farbe: '#862e9c', hell: '#f3d9fa', an: false, daten: true },
     { id: 'staedte', gruppe: 'Orte', sym: 'stadt', titel: 'Städte', farbe: '#c92a2a', hell: '#ffe3e3', an: true, daten: true },
     { id: 'doerfer', gruppe: 'Orte', sym: 'dorf', titel: 'Dörfer', farbe: '#ffb020', hell: '#fff0d0', text: '#16304a', an: false, daten: ORTE.some(function (o) { return o.t === 'dorf'; }) },
+    { id: 'umrisse', gruppe: 'Orte', breit: true, sym: 'umriss', titel: 'Umrisse der Orte', farbe: '#a61e4d', hell: '#ffdeeb', an: false, daten: SIEDLUNG.length > 0 },
     { id: 'wasser', gruppe: 'Natur', sym: 'wasser', titel: 'Flüsse & Seen', farbe: '#1c6fc2', hell: '#d0ebff', an: false, daten: WASSER.length + SEEN.length > 0 },
     { id: 'berge', gruppe: 'Natur', sym: 'berg', titel: 'Berge & Täler', farbe: '#8c5a2b', hell: '#f0dcc3', an: false, daten: true },
     { id: 'autobahn', gruppe: 'Straßen', schild: '<span class="schild autobahn">' + esc(ersteA) + '</span>', titel: 'Auto\u00ADbahnen', farbe: '#1d4ed8', hell: '#dbe4ff', an: false, daten: hatA },
@@ -67,7 +69,7 @@
   L.control.scale({ position: 'bottomright', imperial: false, maxWidth: 140 }).addTo(map);
   L.control.attribution({ position: 'bottomright', prefix: false })
     .addTo(map).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> · © GeoBasis-DE / BKG');
-  [['reliefPane', 250], ['nachbarPane', 310], ['kreisFlaechePane', 320], ['gemeindePane', 330], ['seePane', 340], ['wasserPane', 350],
+  [['reliefPane', 250], ['nachbarPane', 310], ['kreisFlaechePane', 320], ['gemeindePane', 330], ['umrissPane', 335], ['seePane', 340], ['wasserPane', 350],
    ['kreisLiniePane', 380], ['strassenPane', 420], ['punktPane', 450], ['trefferLinienPane', 460], ['trefferPane', 470], ['hervorPane', 480]].forEach(function (p) {
     map.createPane(p[0]).style.zIndex = p[1];
   });
@@ -187,6 +189,16 @@
   });
   var gruppeGemeinden = L.layerGroup([gemeindeSchicht]);
 
+  // ------------------------------------------------------------ Ebene: Umrisse der Orte (grobe Siedlungsflächen)
+  function umrissStil(f) {
+    var sk = skala(), stadt = f.properties.t === 'stadt';
+    return { color: stadt ? '#c92a2a' : '#e8590c', weight: 1.6 * Math.min(sk, 1.3), lineJoin: 'round',
+             fillColor: stadt ? '#ff8787' : '#ffc078', fillOpacity: 0.62 };
+  }
+  var umrissSchicht = L.geoJSON(SIEDLUNG.map(function (s) { return { type: 'Feature', properties: { t: s.t, n: s.n }, geometry: s.f }; }),
+    { pane: 'umrissPane', interactive: false, style: umrissStil });
+  var gruppeUmrisse = L.layerGroup([umrissSchicht]);
+
   // ------------------------------------------------------------ Ebene: Städte / Dörfer
   var STIL = {
     stadt: { r: 9, fill: '#e03131', rand: 3 },
@@ -270,7 +282,7 @@
 
   // ------------------------------------------------------------ Schalter
   var gruppen = { kreis: gruppeKreis, gemeinden: gruppeGemeinden, staedte: gruppeStaedte, doerfer: gruppeDoerfer, wasser: gruppeWasser,
-                  berge: gruppeGipfel, autobahn: gruppeAutobahn, bundesstr: gruppeBundesstr };
+                  berge: gruppeGipfel, autobahn: gruppeAutobahn, bundesstr: gruppeBundesstr, umrisse: gruppeUmrisse };
 
   function zoomSichtbarkeit() {
     var z = map.getZoom();
@@ -290,6 +302,7 @@
     nachbarSchicht.setStyle(nachbarStil);
     kreisFlaeche.setStyle(kreisFlaechenStil);
     gemeindeSchicht.setStyle(gemeindeStil);
+    umrissSchicht.setStyle(umrissStil);
     wasserLinien.forEach(function (x) { x.linie.setStyle({ weight: WASSER_STIL[x.w.k].b * sk }); });
     strassenLinien.forEach(function (x) {
       var a = x.s.k === 'A';
@@ -332,7 +345,7 @@
     EBENEN.forEach(function (e) {
       if (e.gruppe !== gruppe) { gruppe = e.gruppe; var h = document.createElement('div'); h.className = 'gruppentitel'; h.textContent = gruppe; liste.appendChild(h); }
       var b = document.createElement('button');
-      b.type = 'button'; b.className = 'ebene'; b.setAttribute('data-id', e.id);
+      b.type = 'button'; b.className = 'ebene' + (e.breit ? ' breit' : ''); b.setAttribute('data-id', e.id);
       b.setAttribute('aria-pressed', an[e.id] ? 'true' : 'false');
       b.style.setProperty('--ebene-farbe', e.farbe); b.style.setProperty('--ebene-hell', e.hell); if (e.text) b.style.setProperty('--ebene-text', e.text);
       if (!e.daten) { b.disabled = true; b.title = 'Dafür fehlen noch Daten'; }
@@ -343,10 +356,10 @@
       liste.appendChild(b);
     });
     var schnell = [
-      ['Nur Umriss', { kreis: 1 }], ['Gemeinden', { kreis: 1, gemeinden: 1 }], ['Orte', { kreis: 1, staedte: 1, doerfer: 1 }],
+      ['Nur Umriss', { kreis: 1 }], ['Gemeinden', { kreis: 1, gemeinden: 1 }], ['Orte', { kreis: 1, staedte: 1, doerfer: 1, umrisse: 1 }],
       ['Straßen', { kreis: 1, staedte: 1, autobahn: 1, bundesstr: 1 }], ['Wasser', { kreis: 1, wasser: 1, staedte: 1 }],
       ['Berge', { kreis: 1, berge: 1, staedte: 1 }],
-      ['Alles', { kreis: 1, gemeinden: 1, staedte: 1, doerfer: 1, wasser: 1, berge: 1, autobahn: 1, bundesstr: 1 }], ['Alles aus', {}]
+      ['Alles', { kreis: 1, gemeinden: 1, staedte: 1, doerfer: 1, umrisse: 1, wasser: 1, berge: 1, autobahn: 1, bundesstr: 1 }], ['Alles aus', {}]
     ];
     schnell.forEach(function (s) {
       var b = document.createElement('button');
@@ -366,31 +379,55 @@
   // ------------------------------------------------------------ Legende
   function svg(w, h, inhalt) { return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' + inhalt + '</svg>'; }
   function zeile(zeichen, text) { return '<div class="leg-zeile"><span class="zeichen">' + zeichen + '</span><span>' + text + '</span></div>'; }
-  function baueLegende() {
-    var h = '';
-    if (an.kreis) h += '<div class="leg-gruppe">Grenzen</div>' +
-      zeile(svg(50, 14, '<line x1="3" y1="7" x2="47" y2="7" stroke="#d9480f" stroke-width="5" stroke-linecap="round"/>'), 'Grenze des Landkreises') +
-      zeile(svg(44, 22, '<rect x="2" y="2" width="40" height="18" rx="5" fill="#e4e7ea" stroke="#868e96" stroke-width="2"/>'), 'Nachbarkreise (grau)');
-    if (an.gemeinden) { if (!an.kreis) h += '<div class="leg-gruppe">Grenzen</div>'; h += zeile(svg(50, 14, '<line x1="3" y1="7" x2="47" y2="7" stroke="#862e9c" stroke-width="3" stroke-dasharray="9 6" stroke-linecap="round"/>'), 'Grenze einer Gemeinde'); }
-    if (an.staedte || an.doerfer) h += '<div class="leg-gruppe">Orte</div>';
-    if (an.staedte) h += zeile(svg(26, 26, '<circle cx="13" cy="13" r="10" fill="#e03131" stroke="#fff" stroke-width="3"/>'), 'Stadt') +
-      zeile(svg(26, 26, '<circle cx="13" cy="13" r="8" fill="#868e96" stroke="#fff" stroke-width="3"/>'), 'Stadt außerhalb');
-    if (an.doerfer) h += zeile(svg(26, 26, '<circle cx="13" cy="13" r="7" fill="#f08c00" stroke="#fff" stroke-width="3"/>'), 'Dorf');
-    if (an.wasser) h += '<div class="leg-gruppe">Wasser</div>' +
-      zeile(svg(50, 16, '<path d="M3 9 Q 12 1 21 9 T 39 9 T 48 8" fill="none" stroke="#2b8ae0" stroke-width="4" stroke-linecap="round"/>'), 'Fluss oder Bach') +
-      zeile(svg(44, 24, '<ellipse cx="22" cy="12" rx="19" ry="9" fill="#74c0fc" stroke="#1c7ed6" stroke-width="2"/>'), 'See oder Talsperre');
-    if (an.autobahn || an.bundesstr) h += '<div class="leg-gruppe">Straßen</div>';
-    if (an.autobahn) h += zeile('<span class="schild autobahn">' + esc(ersteA) + '</span>', 'Autobahn');
-    if (an.bundesstr) h += zeile('<span class="schild bundesstr">' + esc(ersteB) + '</span>', 'Bundesstraße');
-    if (an.berge) {
-      h += '<div class="leg-gruppe">Berge und Täler</div>';
-      if (BERGE.length) h += zeile(svg(24, 22, '<path d="M12 2 L22 20 L2 20 Z" fill="#7f3f12" stroke="#fff" stroke-width="2"/>'), 'Berggipfel mit Höhe');
-      if (NS.Relief) {
-        h += '<div class="leg-hoehen">';
-        NS.Relief.stufen.slice().reverse().forEach(function (s) { h += '<div class="band"><i style="background:' + s.farbe + '"></i><span>' + esc(s.text) + '</span></div>'; });
-        h += '</div>';
-      }
+  // Die Legende ist eine Liste: {g: Gruppentitel} | {z: Zeichen (SVG- oder Schild-HTML), t: Text} | {band: Farbe, t: Text}
+  // Daraus entstehen die Legende am Bildschirm und die Legende im gespeicherten Bild.
+  function legendenEintraege() {
+    var L_ = [];
+    function gruppe(n) { L_.push({ g: n }); }
+    function eintrag(z, t) { L_.push({ z: z, t: t }); }
+    if (an.kreis) {
+      gruppe('Grenzen');
+      eintrag(svg(50, 14, '<line x1="3" y1="7" x2="47" y2="7" stroke="#d9480f" stroke-width="5" stroke-linecap="round"/>'), 'Grenze des Landkreises');
+      eintrag(svg(44, 22, '<rect x="2" y="2" width="40" height="18" rx="5" fill="#e4e7ea" stroke="#868e96" stroke-width="2"/>'), 'Nachbarkreise (grau)');
     }
+    if (an.gemeinden) {
+      if (!an.kreis) gruppe('Grenzen');
+      eintrag(svg(50, 14, '<line x1="3" y1="7" x2="47" y2="7" stroke="#862e9c" stroke-width="3" stroke-dasharray="9 6" stroke-linecap="round"/>'), 'Grenze einer Gemeinde');
+    }
+    if (an.staedte || an.doerfer || an.umrisse) gruppe('Orte');
+    if (an.staedte) {
+      eintrag(svg(26, 26, '<circle cx="13" cy="13" r="10" fill="#e03131" stroke="#fff" stroke-width="3"/>'), 'Stadt');
+      eintrag(svg(26, 26, '<circle cx="13" cy="13" r="8" fill="#868e96" stroke="#fff" stroke-width="3"/>'), 'Stadt außerhalb');
+    }
+    if (an.doerfer) eintrag(svg(26, 26, '<circle cx="13" cy="13" r="7" fill="#f08c00" stroke="#fff" stroke-width="3"/>'), 'Dorf');
+    if (an.umrisse) {
+      eintrag(svg(44, 26, '<path d="M4 9C4 4 14 2 24 4s17 3 16 9-8 11-18 10S3 20 4 9z" fill="#ff8787" fill-opacity=".62" stroke="#c92a2a" stroke-width="2.2"/>'), 'Fläche einer Stadt');
+      eintrag(svg(44, 26, '<path d="M8 10c1-5 9-7 17-6s13 4 11 10-9 9-17 8S7 16 8 10z" fill="#ffc078" fill-opacity=".62" stroke="#e8590c" stroke-width="2.2"/>'), 'Fläche eines Dorfes');
+    }
+    if (an.wasser) {
+      gruppe('Wasser');
+      eintrag(svg(50, 16, '<path d="M3 9 Q 12 1 21 9 T 39 9 T 48 8" fill="none" stroke="#2b8ae0" stroke-width="4" stroke-linecap="round"/>'), 'Fluss oder Bach');
+      eintrag(svg(44, 24, '<ellipse cx="22" cy="12" rx="19" ry="9" fill="#74c0fc" stroke="#1c7ed6" stroke-width="2"/>'), 'See oder Talsperre');
+    }
+    if (an.autobahn || an.bundesstr) gruppe('Straßen');
+    if (an.autobahn) eintrag('<span class="schild autobahn">' + esc(ersteA) + '</span>', 'Autobahn');
+    if (an.bundesstr) eintrag('<span class="schild bundesstr">' + esc(ersteB) + '</span>', 'Bundesstraße');
+    if (an.berge) {
+      gruppe('Berge und Täler');
+      if (BERGE.length) eintrag(svg(24, 22, '<path d="M12 2 L22 20 L2 20 Z" fill="#7f3f12" stroke="#fff" stroke-width="2"/>'), 'Berggipfel mit Höhe');
+      if (NS.Relief) NS.Relief.stufen.slice().reverse().forEach(function (st) { L_.push({ band: st.farbe, t: st.text }); });
+    }
+    return L_;
+  }
+  function baueLegende() {
+    var h = '', baender = '';
+    function bandEnde() { if (baender) { h += '<div class="leg-hoehen">' + baender + '</div>'; baender = ''; } }
+    legendenEintraege().forEach(function (e) {
+      if (e.band) { baender += '<div class="band"><i style="background:' + e.band + '"></i><span>' + esc(e.t) + '</span></div>'; return; }
+      bandEnde();
+      if (e.g) h += '<div class="leg-gruppe">' + esc(e.g) + '</div>'; else h += zeile(e.z, e.t);
+    });
+    bandEnde();
     if (!h) h = '<p class="leg-leer">Schalte links etwas ein, dann erkläre ich es dir hier.</p>';
     $('legendeninhalt').innerHTML = h;
   }
@@ -664,6 +701,33 @@
     var q = $('quizleiste'), oben = q.hidden ? 0 : q.offsetHeight + 14;
     map.flyToBounds(grenzen.pad(0.1), { duration: 0.7, paddingTopLeft: [0, oben] });
   }
+  // ------------------------------------------------------------ Karte als Bild speichern
+  var bildMenue = $('bildmenue'), bildKnopf = $('bildknopf');
+  function bildMenueZu() { bildMenue.hidden = true; bildKnopf.setAttribute('aria-expanded', 'false'); }
+  bildKnopf.addEventListener('click', function () {
+    var auf = bildMenue.hidden;
+    bildMenue.hidden = !auf; bildKnopf.setAttribute('aria-expanded', auf ? 'true' : 'false');
+    if (auf) { var b1 = bildMenue.querySelector('button'); if (b1) b1.focus(); }
+  });
+  document.addEventListener('click', function (e) { if (!bildMenue.hidden && !$('bildbox').contains(e.target)) bildMenueZu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !bildMenue.hidden) { bildMenueZu(); bildKnopf.focus(); } });
+  bildMenue.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-legende]') : null;
+    if (!b) return;
+    bildMenueZu();
+    bildSpeichern(b.getAttribute('data-legende') === '1');
+  });
+  function bildSpeichern(mitLegende, ohneDownload) {
+    if (!NS.Export) { toast('Das Speichern als Bild geht hier leider nicht.', 5000); return Promise.resolve(null); }
+    toast('Das Bild wird gemacht …', 8000);
+    return NS.Export.speichern({
+      karte: map, behaelter: $('karte'), relief: an.berge ? reliefSchicht : null, mitLegende: mitLegende, eintraege: legendenEintraege(), titel: 'Landkreis Gotha',
+      quellen: 'Karte: © OpenStreetMap-Mitwirkende · © GeoBasis-DE / BKG' + (an.berge ? ' · Höhen: Terrain Tiles (u. a. NASA SRTM)' : ''),
+      herunterladen: !ohneDownload
+    }).then(function (r) { toast('Gespeichert: ' + r.name + ' (im Ordner „Downloads“)', 6000); return r; })
+      .catch(function () { toast('Das Bild konnte nicht gespeichert werden.', 6000); return null; });
+  }
+
   $('heimknopf').addEventListener('click', function () { map.closePopup(); entferneHervor(); zeigeGanz(); });
   map.on('click', function () { if (window.matchMedia('(max-width: 920px)').matches) schliesseMenue(); });
   $('legendenknopf').addEventListener('click', function () { var l = $('legende'); l.hidden = !l.hidden; baueLegende(); schliesseMenue(); });
@@ -719,5 +783,5 @@
   });
 
   // für Tests und Fehlersuche
-  NS.app = { karte: map, an: an, schalte: schalte, setzeZustand: setzeZustand, ZIELE: ZIELE, tippe: tippe, zeigeZiel: zeigeZiel, beschriftung: beschriftung, suche: sucheAus, ORTE: ORTE };
+  NS.app = { karte: map, an: an, schalte: schalte, setzeZustand: setzeZustand, ZIELE: ZIELE, tippe: tippe, zeigeZiel: zeigeZiel, bildSpeichern: bildSpeichern, legendenEintraege: legendenEintraege, beschriftung: beschriftung, suche: sucheAus, ORTE: ORTE };
 })();

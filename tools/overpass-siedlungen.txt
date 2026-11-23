@@ -1,0 +1,6 @@
+[out:json][timeout:180];
+area(3600062468)->.a;
+(
+  nwr["landuse"~"^(residential|commercial|retail|industrial)$"](area.a);
+);
+out geom;
