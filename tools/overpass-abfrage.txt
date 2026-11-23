@@ -1,0 +1,15 @@
+[out:json][timeout:180];
+area(3600062468)->.a;
+(
+  node["place"~"^(city|town|village|hamlet)$"](area.a);
+  node["place"~"^(city|town)$"](50.60,10.20,51.25,11.20);
+  node["natural"="peak"]["name"](area.a);
+  way["highway"~"^(motorway|trunk|primary|secondary)$"]["ref"~"^[AB] ?[0-9]"](area.a);
+  way["waterway"~"^(river|canal)$"](area.a);
+  way["waterway"="stream"]["name"](area.a);
+  nwr["natural"="water"]["name"](area.a);
+  nwr["landuse"="reservoir"]["name"](area.a);
+);
+out geom;
+rel["boundary"="administrative"]["admin_level"="8"](area.a);
+out tags;

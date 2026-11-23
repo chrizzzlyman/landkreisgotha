@@ -1,0 +1,278 @@
+/* Unser Landkreis Gotha – Kartenentdecker */
+:root {
+  --schrift: "Nunito", "Trebuchet MS", "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --papier: #fffdf7;
+  --tinte: #243447;
+  --tinte-hell: #5b6b7c;
+  --linie: #e3dccb;
+  --akzent: #e8590c;
+  --akzent-dunkel: #b8430a;
+  --gruen: #2f9e44;
+  --blau: #1c7ed6;
+  --gelb: #ffd43b;
+  --kopf-h: 62px;
+  --leiste-b: 372px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--schrift);
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--tinte);
+  background: var(--papier);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+button { font-family: inherit; cursor: pointer; }
+a { color: var(--blau); }
+:focus-visible { outline: 4px solid #1971c2; outline-offset: 2px; }
+
+#app {
+  display: grid;
+  grid-template-columns: var(--leiste-b) minmax(0, 1fr);
+  grid-template-rows: var(--kopf-h) 1fr;
+  grid-template-areas: "kopf kopf" "leiste karte";
+  height: 100%;
+  height: 100dvh;
+}
+
+/* ---------- Kopfzeile ---------- */
+#kopf {
+  grid-area: kopf; min-width: 0;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 14px;
+  background: linear-gradient(135deg, #ffd43b 0%, #ffa94d 100%);
+  border-bottom: 4px solid var(--akzent);
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  z-index: 1200;
+}
+#kopf h1 { flex: 1; margin: 0; font-size: 1.55rem; font-weight: 900; letter-spacing: .2px; color: #3b2a07; text-shadow: 0 1px 0 rgba(255,255,255,.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rundknopf {
+  width: 46px; height: 46px; flex: none;
+  border-radius: 50%; border: 3px solid #fff; background: var(--akzent); color: #fff;
+  font-size: 1.3rem; line-height: 1; box-shadow: 0 2px 5px rgba(0,0,0,.25);
+}
+.rundknopf:active { transform: scale(.94); }
+#menueknopf { display: none; }
+
+/* ---------- Seitenleiste ---------- */
+#seitenleiste {
+  grid-area: leiste; min-width: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 14px 14px 20px;
+  background: var(--papier);
+  border-right: 3px solid var(--linie);
+  z-index: 1100;
+}
+#seitenleiste h2 { margin: 18px 0 4px; font-size: 1.15rem; font-weight: 900; color: var(--akzent-dunkel); }
+#seitenleiste section:first-of-type h2 { margin-top: 12px; }
+.hinweis { margin: 0 0 10px; color: var(--tinte-hell); font-size: .95rem; }
+
+.suche { position: relative; }
+#suchfeld {
+  width: 100%; height: 52px; padding: 0 16px;
+  font: inherit; font-size: 1.1rem; font-weight: 700;
+  border: 3px solid var(--linie); border-radius: 26px; background: #fff; color: var(--tinte);
+}
+#suchfeld:focus { border-color: var(--blau); outline: none; box-shadow: 0 0 0 4px rgba(28,126,214,.2); }
+#suchtreffer {
+  position: absolute; left: 0; right: 0; top: 56px; z-index: 50;
+  margin: 0; padding: 6px; list-style: none;
+  background: #fff; border: 3px solid var(--blau); border-radius: 18px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.2); max-height: 60vh; overflow-y: auto;
+}
+#suchtreffer li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; font-weight: 800; cursor: pointer; }
+#suchtreffer li small { margin-left: auto; font-weight: 700; color: var(--tinte-hell); font-size: .85rem; }
+#suchtreffer li[aria-selected="true"], #suchtreffer li:hover { background: #e7f5ff; }
+#suchtreffer li.leer { cursor: default; color: var(--tinte-hell); font-weight: 700; }
+
+/* Ebenenknöpfe */
+#ebenenliste { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gruppentitel { grid-column: 1 / -1; margin: 8px 0 -2px; font-size: .85rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: var(--tinte-hell); }
+.ebene {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: 92px; padding: 10px 6px 8px;
+  border: 4px solid var(--linie); border-radius: 20px; background: #fff; color: var(--tinte);
+  font-size: 1rem; font-weight: 900; text-align: center; line-height: 1.15;
+  transition: transform .08s, background .15s, border-color .15s, box-shadow .15s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.ebene .bild { font-size: 2rem; line-height: 1; height: 2.2rem; display: flex; align-items: center; justify-content: center; }
+.ebene .haken {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid var(--linie); background: #fff; color: transparent; font-size: 16px; line-height: 20px; font-weight: 900;
+}
+.ebene[aria-pressed="true"] { background: var(--ebene-farbe-hell, #fff3bf); border-color: var(--ebene-farbe, var(--akzent)); box-shadow: 0 3px 0 var(--ebene-farbe, var(--akzent)); }
+.ebene[aria-pressed="true"] .haken { background: var(--gruen); border-color: var(--gruen); color: #fff; }
+.ebene:active { transform: scale(.96); }
+.ebene[disabled] { opacity: .5; cursor: not-allowed; }
+.ebene small { display: block; font-weight: 700; font-size: .78rem; color: var(--tinte-hell); }
+
+/* Schilder-Symbole in den Knöpfen */
+.schild { display: inline-block; min-width: 52px; padding: 3px 8px; border-radius: 7px; font-weight: 900; font-size: 1.05rem; letter-spacing: .02em; border: 3px solid #fff; box-shadow: 0 0 0 2px currentColor; }
+.schild.autobahn { background: #1d4ed8; color: #fff; border-color: #fff; box-shadow: 0 0 0 2px #1d4ed8; }
+.schild.bundesstr { background: #ffd43b; color: #1a1a1a; border-color: #1a1a1a; box-shadow: none; }
+
+/* Schnellauswahl */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 46px; padding: 8px 14px; border: 3px solid var(--linie); border-radius: 23px; background: #fff; color: var(--tinte); font-weight: 800; font-size: 1rem; }
+.chip:hover { border-color: var(--blau); }
+.chip:active { transform: scale(.95); }
+
+.aktionen { display: grid; gap: 10px; margin-top: 20px; }
+.grossknopf {
+  min-height: 56px; padding: 10px 16px; border: 4px solid var(--blau); border-radius: 18px; background: #e7f5ff; color: #0b4f8a;
+  font-size: 1.1rem; font-weight: 900; box-shadow: 0 4px 0 var(--blau);
+}
+.grossknopf.quiz { border-color: var(--gruen); background: #ebfbee; color: #1b6e30; box-shadow: 0 4px 0 var(--gruen); }
+.grossknopf:active { transform: translateY(3px); box-shadow: 0 1px 0 currentColor; }
+
+#quellen { margin-top: 22px; padding-top: 12px; border-top: 2px dashed var(--linie); font-size: .78rem; line-height: 1.4; color: var(--tinte-hell); }
+#quellen p { margin: 0; }
+
+/* ---------- Karte ---------- */
+#kartenbereich { grid-area: karte; position: relative; min-width: 0; min-height: 0; }
+#karte { position: absolute; inset: 0; background: #f4f0e4; font-family: var(--schrift); }
+.leaflet-container { font-family: var(--schrift); font-size: 16px; }
+
+/* größere Zoom-Knöpfe für Kinderfinger */
+.leaflet-touch .leaflet-bar a, .leaflet-bar a { width: 50px; height: 50px; line-height: 50px; font-size: 28px; font-weight: 900; color: var(--tinte); }
+.leaflet-touch .leaflet-bar { border: 3px solid rgba(0,0,0,.25); border-radius: 14px; }
+.leaflet-top.leaflet-left { top: 6px; left: 6px; }
+.leaflet-control-scale-line { font-weight: 800; font-size: 14px; border-width: 3px; background: rgba(255,255,255,.85); color: var(--tinte); }
+.leaflet-control-attribution { font-size: 11px; }
+
+#kompass { position: absolute; right: 12px; top: 12px; z-index: 900; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+
+/* Boxen über der Karte */
+.karte-box {
+  position: absolute; z-index: 1000;
+  background: rgba(255,255,255,.97); border: 4px solid var(--linie); border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+}
+.box-kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 4px 16px; font-size: 1.1rem; }
+.schliessen { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--linie); background: #fff; font-size: 1.1rem; font-weight: 900; color: var(--tinte); }
+
+#legende { left: 12px; bottom: 34px; width: min(340px, calc(100% - 24px)); max-height: 60%; overflow-y: auto; }
+#legendeninhalt { padding: 4px 16px 14px; }
+.leg-gruppe { margin: 8px 0 2px; font-size: .8rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; color: var(--tinte-hell); }
+.leg-zeile { display: flex; align-items: center; gap: 12px; min-height: 34px; font-weight: 800; font-size: 1rem; }
+.leg-zeile .zeichen { flex: none; width: 58px; display: flex; align-items: center; justify-content: center; }
+.leg-zeile svg { display: block; overflow: visible; }
+.leg-leer { color: var(--tinte-hell); font-weight: 700; }
+.leg-hoehen { display: flex; flex-direction: column; gap: 3px; margin: 4px 0 2px; }
+.leg-hoehen .band { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: .95rem; }
+.leg-hoehen .band i { flex: none; width: 58px; height: 22px; border-radius: 6px; border: 2px solid rgba(0,0,0,.25); }
+
+#toast {
+  position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 1300;
+  max-width: min(520px, calc(100% - 100px)); padding: 12px 18px; border-radius: 18px;
+  background: #fff3bf; border: 3px solid #f59f00; color: #5c3b00; font-weight: 800; text-align: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+
+/* Willkommen */
+.deckblatt { position: absolute; inset: 0; z-index: 1400; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(36,52,71,.55); }
+.willkommenskarte { max-width: 520px; padding: 22px 24px 24px; border-radius: 26px; border: 5px solid var(--gelb); background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.willkommenskarte h2 { margin: 0 0 8px; font-size: 1.7rem; color: var(--akzent-dunkel); }
+.willkommenskarte ol { margin: 0 0 18px; padding-left: 1.3em; font-weight: 700; }
+.willkommenskarte li { margin-bottom: 8px; }
+.willkommenskarte .grossknopf { width: 100%; }
+
+/* ---------- Karteninhalt: Beschriftungen ---------- */
+.leaflet-labelPane-pane, .leaflet-pane.leaflet-labelPane-pane { pointer-events: none; }
+.etikett {
+  position: absolute; left: 0; top: 0; white-space: nowrap; pointer-events: none;
+  font-family: var(--schrift); line-height: 1.1; transform-origin: 50% 50%;
+  text-shadow: -2px -2px 0 var(--halo, #fff), 2px -2px 0 var(--halo, #fff), -2px 2px 0 var(--halo, #fff), 2px 2px 0 var(--halo, #fff),
+               0 -2px 0 var(--halo, #fff), 0 2px 0 var(--halo, #fff), -2px 0 0 var(--halo, #fff), 2px 0 0 var(--halo, #fff);
+  transition: opacity .18s;
+}
+.zoomt .etikett { opacity: 0; transition: none; }
+.etikett.kreisname { font-weight: 900; letter-spacing: .22em; text-transform: uppercase; color: #b8430a; --halo: rgba(255,248,219,.95); }
+.etikett.nachbar { font-weight: 800; letter-spacing: .08em; color: #5c6670; --halo: rgba(255,255,255,.9); font-style: normal; }
+.etikett.gemeinde { font-weight: 800; color: #6b1f7c; --halo: rgba(255,255,255,.92); }
+.etikett.stadt { font-weight: 900; color: #a61e1e; --halo: rgba(255,255,255,.95); }
+.etikett.nachbarstadt { font-weight: 800; color: #495057; --halo: rgba(255,255,255,.92); }
+.etikett.dorf { font-weight: 800; color: #7a3e00; --halo: rgba(255,255,255,.92); }
+.etikett.weiler { font-weight: 700; color: #7a5a30; --halo: rgba(255,255,255,.9); }
+.etikett.wasser { font-weight: 800; font-style: italic; color: #0b5cad; --halo: rgba(235,247,255,.92); letter-spacing: .04em; }
+.etikett.berg { font-weight: 800; color: #5b2c06; --halo: rgba(255,255,255,.92); }
+.etikett.berg b { font-weight: 900; }
+.etikett.schild { padding: 1px 6px; border-radius: 5px; font-weight: 900; text-shadow: none; letter-spacing: .02em; box-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.etikett.schild.autobahn { background: #1d4ed8; color: #fff; border: 2px solid #fff; }
+.etikett.schild.bundesstr { background: #ffd43b; color: #111; border: 2px solid #111; }
+.etikett.quizziel { font-weight: 900; color: #1b6e30; }
+
+/* Pulsierende Markierung für gefundene Orte */
+.puls { position: relative; width: 0; height: 0; }
+.puls::before, .puls::after { content: ""; position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; border: 5px solid #f03e3e; animation: puls 1.3s ease-out infinite; }
+.puls::after { animation-delay: .65s; }
+@keyframes puls { from { transform: scale(.35); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .puls::before, .puls::after { animation: none; } .etikett { transition: none; } }
+
+/* Hinweisfenster (Popup) */
+.leaflet-popup-content-wrapper { border-radius: 20px; border: 4px solid var(--akzent); box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+.leaflet-popup-content { margin: 12px 16px; font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
+.leaflet-popup-content h3 { margin: 0 0 4px; font-size: 1.3rem; font-weight: 900; color: var(--akzent-dunkel); }
+.leaflet-popup-content p { margin: 2px 0; }
+.leaflet-popup-content .art { display: inline-block; margin-bottom: 4px; padding: 1px 10px; border-radius: 12px; background: #fff3bf; font-size: .9rem; font-weight: 900; color: #7a4b00; }
+.leaflet-container a.leaflet-popup-close-button { width: 36px; height: 36px; font-size: 26px; line-height: 34px; color: var(--tinte); }
+
+.leaflet-interactive { outline: none; }
+
+/* ---------- Quiz ---------- */
+#quizleiste { left: 50%; top: 12px; transform: translateX(-50%); width: min(640px, calc(100% - 140px)); padding: 12px 16px 14px; border-color: var(--gruen); }
+#quizleiste h3 { margin: 0 0 6px; font-size: 1.1rem; color: #1b6e30; }
+.quiz-frage { font-size: 1.55rem; font-weight: 900; line-height: 1.2; }
+.quiz-frage .ziel { color: #a61e1e; }
+.quiz-zeile { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.quiz-meldung { min-height: 1.6em; margin-top: 6px; font-size: 1.15rem; font-weight: 900; }
+.quiz-meldung.gut { color: #1b6e30; }
+.quiz-meldung.nochmal { color: #b8430a; }
+.sterne { font-size: 1.3rem; letter-spacing: .05em; }
+.quiz-knoepfe { display: flex; gap: 8px; flex-wrap: wrap; }
+.klein { min-height: 46px; padding: 6px 14px; border: 3px solid var(--linie); border-radius: 16px; background: #fff; font-weight: 900; font-size: 1rem; color: var(--tinte); }
+.klein.primaer { background: var(--gruen); border-color: #237a37; color: #fff; }
+.quiz-wahl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0 6px; }
+.quiz-wahl button { min-height: 76px; border: 4px solid var(--linie); border-radius: 18px; background: #fff; font-size: 1.05rem; font-weight: 900; color: var(--tinte); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.quiz-wahl button span { font-size: 1.9rem; line-height: 1; }
+.quiz-wahl button small { font-weight: 700; font-size: .8rem; color: var(--tinte-hell); }
+.quiz-wahl button:hover { border-color: var(--gruen); background: #ebfbee; }
+.quiz-ende { text-align: center; padding: 6px 0 4px; }
+.quiz-ende .gross { font-size: 2.4rem; letter-spacing: .1em; margin: 4px 0; }
+.richtig-blitz { animation: blitz .9s ease-out 1; }
+@keyframes blitz { 0% { filter: brightness(1.5); } 100% { filter: none; } }
+
+/* ---------- schmale Bildschirme (Tablet hochkant, Handy) ---------- */
+@media (max-width: 920px) {
+  :root { --leiste-b: min(88vw, 400px); --kopf-h: 56px; }
+  #app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "kopf" "karte"; }
+  #menueknopf { display: block; }
+  #kopf h1 { font-size: 1.25rem; }
+  #seitenleiste {
+    position: fixed; top: var(--kopf-h); bottom: 0; left: 0; width: var(--leiste-b);
+    transform: translateX(-102%); transition: transform .22s ease; box-shadow: 6px 0 20px rgba(0,0,0,.3);
+  }
+  body.menue-offen #seitenleiste { transform: none; }
+  #quizleiste { width: calc(100% - 24px); top: 8px; }
+  #kompass { top: auto; bottom: 90px; right: 8px; }
+  #kompass svg { width: 46px; height: 46px; }
+  #legende { bottom: 28px; }
+  .quiz-frage { font-size: 1.3rem; }
+}
+@media (max-width: 480px) {
+  body { font-size: 17px; }
+  #ebenenliste { gap: 8px; }
+  .ebene { min-height: 84px; }
+}
+@media print { #seitenleiste, #kopf, .karte-box, #kompass { display: none !important; } #app { display: block; } #karte { position: static; height: 100vh; } }
+
+/* Berggipfel-Symbol */
+.gipfel { background: none; border: 0; }
+.gipfel span { display: block; width: 26px; text-align: center; font-size: 22px; line-height: 22px; color: #7f3f12; text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff; cursor: pointer; }

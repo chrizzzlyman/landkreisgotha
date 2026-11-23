@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Entdecke den Landkreis Gotha: eine Karte für Grundschulkinder mit Grenzen, Gemeinden, Städten, Dörfern, Flüssen, Straßen und Bergen.">
+<title>Unser Landkreis Gotha – Kartenentdecker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%97%BA%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="lib/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="kopf">
+    <button id="menueknopf" class="rundknopf" aria-label="Menü öffnen oder schließen" aria-expanded="false">☰</button>
+    <h1><span aria-hidden="true">🗺️</span> Unser Landkreis Gotha</h1>
+    <button id="heimknopf" class="rundknopf" aria-label="Ganzen Landkreis zeigen" title="Ganzen Landkreis zeigen">🏠</button>
+  </header>
+
+  <aside id="seitenleiste" aria-label="Kartenmenü">
+    <div class="suche">
+      <label for="suchfeld" class="sr-only">Ort suchen</label>
+      <input id="suchfeld" type="search" placeholder="🔍 Suche einen Ort …" autocomplete="off" spellcheck="false" aria-controls="suchtreffer">
+      <ul id="suchtreffer" role="listbox" hidden></ul>
+    </div>
+
+    <section aria-labelledby="ueb-ansichten">
+      <h2 id="ueb-ansichten">Was möchtest du sehen?</h2>
+      <p class="hinweis">Tippe auf die Knöpfe. Du kannst alles mischen!</p>
+      <div id="ebenenliste"></div>
+    </section>
+
+    <section aria-labelledby="ueb-schnell">
+      <h2 id="ueb-schnell">Schnellauswahl</h2>
+      <div id="schnellwahl" class="chips"></div>
+    </section>
+
+    <section class="aktionen">
+      <button id="quizknopf" class="grossknopf quiz">🎯 Quiz: Wo liegt …?</button>
+      <button id="legendenknopf" class="grossknopf">🔎 Was bedeutet das?</button>
+    </section>
+
+    <footer id="quellen">
+      <p><strong>Quellen:</strong>
+        <span id="quelle-grenzen"></span>
+        <span id="quelle-osm"></span>
+        Höhenkarte: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Terrain Tiles (u. a. NASA SRTM, EU-DEM, Copernicus)</a>.
+        Karte: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>.</p>
+    </footer>
+  </aside>
+
+  <main id="kartenbereich">
+    <div id="karte" role="application" aria-label="Karte des Landkreises Gotha"></div>
+
+    <div id="kompass" aria-hidden="true"><svg viewBox="0 0 60 60" width="60" height="60"><circle cx="30" cy="30" r="27" fill="#fff" fill-opacity=".85" stroke="#495057" stroke-width="2"/><path d="M30 8 L38 30 L30 26 L22 30 Z" fill="#e03131"/><path d="M30 52 L38 30 L30 34 L22 30 Z" fill="#868e96"/><text x="30" y="21" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="#e03131" stroke-width="0" font-family="sans-serif">N</text></svg></div>
+
+    <div id="legende" class="karte-box" hidden>
+      <div class="box-kopf"><strong>Was bedeutet das?</strong><button class="schliessen" data-schliessen="legende" aria-label="Schließen">✕</button></div>
+      <div id="legendeninhalt"></div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+
+    <div id="quizleiste" class="karte-box" hidden></div>
+
+    <div id="willkommen" class="deckblatt" hidden>
+      <div class="willkommenskarte">
+        <h2>Hallo, Kartenentdecker! 👋</h2>
+        <ol>
+          <li>Tippe links auf die bunten Knöpfe, um Dinge auf der Karte <strong>ein- und auszuschalten</strong>.</li>
+          <li>Tippe auf der Karte auf einen <strong>Ort</strong>, eine <strong>Gemeinde</strong> oder einen <strong>Fluss</strong>. Dann erfährst du mehr.</li>
+          <li>Spiele das <strong>Quiz</strong> und sammle ⭐ Sterne!</li>
+        </ol>
+        <button id="losgehts" class="grossknopf quiz">Los geht's!</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="lib/leaflet/leaflet.js"></script>
+<script src="data/grenzen.js"></script>
+<script src="data/osm.js"></script>
+<script src="js/relief.js"></script>
+<script src="js/beschriftung.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
