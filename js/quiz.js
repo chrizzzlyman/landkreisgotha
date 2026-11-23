@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   var NS = window.Gotha = window.Gotha || {};
+  var SYM = NS.Symbole;
 
   var LOB = ['Super!', 'Richtig!', 'Toll gemacht!', 'Prima!', 'Stark!', 'Genau!'];
   var FRAGEN_PRO_RUNDE = 10;
@@ -47,12 +48,14 @@
     this.phase = 'wahl'; this.versteckt = {};
     if (this.vorher) this.api.setzeZustand(this.vorher);
     var kat = this.api.kategorien();
-    var h = '<h3>🎯 Quiz: Wo liegt …?</h3><p style="margin:0;font-weight:700">Was möchtest du üben? Du bekommst bis zu ⭐⭐⭐ pro Frage.</p><div class="quiz-wahl">';
+    var h = '<div class="quiz-karte"><h3 class="quiz-titel"><span class="qs">' + SYM.svg('quiz', 26) + '</span>Quiz: Wo liegt …?</h3>' +
+      '<p class="quiz-unter">Was möchtest du üben? Für jede Frage gibt es bis zu 3 Sterne.</p><div class="quiz-wahl">';
     kat.forEach(function (k) {
       var n = Math.min(FRAGEN_PRO_RUNDE, k.ziele.length);
-      h += '<button type="button" data-kat="' + esc(k.id) + '"><span aria-hidden="true">' + k.bild + '</span>' + esc(k.titel) + '<small>' + n + ' Fragen</small></button>';
+      h += '<button type="button" data-kat="' + esc(k.id) + '" style="--k-farbe:' + k.farbe + ';--k-hell:' + k.hell + '"><span class="qb" aria-hidden="true">' + SYM.svg(k.sym, 26) + '</span>' +
+        '<span class="qt">' + esc(k.titel) + '<small>' + n + ' Fragen</small></span></button>';
     });
-    h += '</div><div class="quiz-knoepfe"><button type="button" class="klein" data-aktion="abbruch">Abbrechen</button></div>';
+    h += '</div><div class="quiz-knoepfe"><button type="button" class="klein leise" data-aktion="abbruch">Abbrechen</button></div></div>';
     this.panel.innerHTML = h; this.panel.hidden = false;
     this.api.aktualisiere();
   };
@@ -62,7 +65,7 @@
     if (!kat) return;
     this.kat = kat;
     this.fragen = mische(kat.ziele).slice(0, FRAGEN_PRO_RUNDE);
-    this.i = 0; this.sterne = 0;
+    this.i = 0; this.sterne = 0; this.ergebnis = [];
     var z = this.api.holeZustand(), neu = {};
     Object.keys(z).forEach(function (k) { neu[k] = kat.ebenen.indexOf(k) >= 0; });
     this.api.setzeZustand(neu);
@@ -77,20 +80,30 @@
     clearTimeout(this.timer); this.api.entferneHervor();
     if (this.i >= this.fragen.length) { this.ende(); return; }
     this.phase = 'frage'; this.versuch = 0; this.sperre = false;
-    var ziel = this.fragen[this.i];
+    var ziel = this.fragen[this.i], kat = this.kat, self = this;
+    var pips = '';
+    this.fragen.forEach(function (f, k) { pips += '<i class="' + (k < self.i ? (self.ergebnis[k] || 'null') : k === self.i ? 'jetzt' : '') + '"></i>'; });
     this.panel.innerHTML =
-      '<div class="quiz-zeile"><strong>Frage ' + (this.i + 1) + ' von ' + this.fragen.length + '</strong><span class="sterne" aria-label="' + this.sterne + ' Sterne">⭐ ' + this.sterne + '</span></div>' +
-      '<div class="quiz-frage">Wo liegt ' + esc(this.kat.frage) + ' <span class="ziel">' + esc(ziel.name) + '</span>?</div>' +
-      '<div class="quiz-meldung" id="quizmeldung" aria-live="polite">Tippe auf die Karte.</div>' +
-      '<div class="quiz-knoepfe"><button type="button" class="klein" data-aktion="tipp">💡 Tipp</button><button type="button" class="klein" data-aktion="ende">Beenden</button></div>';
+      '<div class="quiz-kopf"><div class="quiz-fortschritt" role="img" aria-label="Frage ' + (this.i + 1) + ' von ' + this.fragen.length + '">' + pips + '</div>' +
+      '<span class="sterne" aria-label="' + this.sterne + ' Sterne">' + SYM.svg('stern', 20) + this.sterne + '</span></div>' +
+      '<div class="quiz-frage"><span class="vor">Wo liegt ' + esc(kat.frage) + '</span>' +
+      '<span class="ziel"><span class="zs" style="--k-farbe:' + kat.farbe + ';--k-hell:' + kat.hell + '" aria-hidden="true">' + SYM.svg(kat.sym, 26) + '</span>' + esc(ziel.name) + '</span></div>' +
+      '<div class="quiz-meldung" id="quizmeldung" aria-live="polite"></div>' +
+      '<div class="quiz-knoepfe"><button type="button" class="klein" data-aktion="tipp">' + SYM.svg('tipp', 22) + 'Tipp</button><button type="button" class="klein leise" data-aktion="ende">Beenden</button></div>';
+    this.meldung('Tippe auf die Karte.', '');
     this.panel.hidden = false;
     this.api.aktualisiere();
   };
 
-  Quiz.prototype.meldung = function (text, klasse) {
+  // klasse: '' (Hinweis) | 'gut' | 'nochmal';  sterne: Anzahl verdienter Sterne (nur bei 'gut')
+  Quiz.prototype.meldung = function (text, klasse, sterne, symbol) {
     var m = document.getElementById('quizmeldung');
     if (!m) return;
-    m.textContent = text; m.className = 'quiz-meldung ' + (klasse || '');
+    var sym = symbol || (klasse === 'gut' ? 'haken' : klasse === 'nochmal' ? 'nochmal' : 'hand');
+    var st = '';
+    if (sterne) { st = '<span class="sterne-reihe" aria-hidden="true">'; for (var i = 0; i < sterne; i++) st += SYM.svg('stern', 26, 'stern-neu').replace('<svg ', '<svg style="animation-delay:' + (i * 0.12).toFixed(2) + 's" '); st += '</span>'; }
+    m.className = 'quiz-meldung ' + (klasse || '');
+    m.innerHTML = SYM.svg(sym, 24) + '<span>' + esc(text) + '</span>' + st;
   };
 
   Quiz.prototype.tipp = function () {
@@ -98,7 +111,7 @@
     var ziel = this.fragen[this.i], z = this.api.ziel(ziel.id);
     var r = z && z.ll ? this.api.richtung(z.ll) : null;
     var extra = ziel.h ? ' Er ist ' + ziel.h + ' m hoch.' : '';
-    this.meldung(r ? 'Tipp: Das liegt im ' + r + ' des Landkreises.' + extra : 'Schau dir die Karte genau an.', '');
+    this.meldung(r ? 'Tipp: Das liegt im ' + r + ' des Landkreises.' + extra : 'Schau dir die Karte genau an.', '', 0, 'tipp');
   };
 
   Quiz.prototype.antwort = function (id) {
@@ -107,12 +120,13 @@
     if (!z) return;
     if (id === ziel.id) return this.richtig();
     if (z.kat !== this.kat.id) {
-      this.meldung('Das ist ' + z.name + '. Suche ' + this.kat.frage + ' ' + ziel.name + '!', 'nochmal');
+      this.meldung('Das ist ' + z.name + '. Suche ' + this.kat.suche + ' ' + ziel.name + '!', 'nochmal');
       return;
     }
     this.versuch++;
     if (this.versuch >= 2) {
       this.sperre = true;
+      this.ergebnis[this.i] = 'null';
       this.api.hebeHervor(ziel.id, 3200);
       this.meldung('Hier liegt ' + ziel.name + '! Merk dir die Stelle.', 'nochmal');
       var self = this;
@@ -124,9 +138,11 @@
 
   Quiz.prototype.richtig = function () {
     var ziel = this.fragen[this.i], s = this.versuch === 0 ? 3 : 2;
-    this.sterne += s; this.sperre = true;
+    this.sterne += s; this.sperre = true; this.ergebnis[this.i] = s === 3 ? 'drei' : 'zwei';
     this.api.hebeHervor(ziel.id, 2200);
-    this.meldung(LOB[Math.floor(Math.random() * LOB.length)] + ' ' + new Array(s + 1).join('⭐'), 'gut');
+    this.meldung(LOB[Math.floor(Math.random() * LOB.length)], 'gut', s);
+    var sz = this.panel.querySelector('.sterne');
+    if (sz) { sz.innerHTML = SYM.svg('stern', 20) + this.sterne; sz.setAttribute('aria-label', this.sterne + ' Sterne'); }
     var self = this;
     this.timer = setTimeout(function () { self.i++; self.naechste(); }, 1900);
   };
@@ -136,11 +152,13 @@
     var max = this.fragen.length * 3, anteil = this.sterne / max;
     var spruch = anteil >= 0.9 ? 'Du bist ein echter Kartenprofi!' : anteil >= 0.6 ? 'Sehr gut gemacht!' : 'Gut geübt! Beim nächsten Mal klappt es noch besser.';
     var voll = Math.max(1, Math.round(anteil * 5));
+    var sterneBild = '';
+    for (var i = 0; i < 5; i++) sterneBild += SYM.svg(i < voll ? 'stern' : 'sternLeer', 44, i < voll ? 'stern-neu' : 'leer').replace('<svg ', '<svg style="animation-delay:' + (i * 0.14).toFixed(2) + 's" ');
     this.panel.innerHTML =
-      '<div class="quiz-ende"><h3>Geschafft! 🎉</h3><div class="gross" aria-hidden="true">' + new Array(voll + 1).join('⭐') + '</div>' +
-      '<div class="quiz-frage">' + this.sterne + ' von ' + max + ' Sternen</div><p style="margin:6px 0 10px;font-weight:800">' + esc(spruch) + '</p>' +
-      '<div class="quiz-knoepfe" style="justify-content:center"><button type="button" class="klein primaer" data-aktion="nochmal">🔁 Nochmal</button>' +
-      '<button type="button" class="klein" data-aktion="anderes">Anderes Quiz</button><button type="button" class="klein" data-aktion="karte">Zur Karte</button></div></div>';
+      '<div class="quiz-karte quiz-ende"><h3>Geschafft!</h3><div class="gross" aria-hidden="true">' + sterneBild + '</div>' +
+      '<div class="punkte">' + this.sterne + ' von ' + max + ' Sternen</div><p class="spruch">' + esc(spruch) + '</p>' +
+      '<div class="quiz-knoepfe"><button type="button" class="klein primaer" data-aktion="nochmal">' + SYM.svg('nochmal', 22) + 'Nochmal</button>' +
+      '<button type="button" class="klein" data-aktion="anderes">Anderes Quiz</button><button type="button" class="klein leise" data-aktion="karte">Zur Karte</button></div></div>';
     this.api.aktualisiere();
   };
 

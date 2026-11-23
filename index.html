@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Entdecke den Landkreis Gotha: eine Karte für Grundschulkinder mit Grenzen, Gemeinden, Städten, Dörfern, Flüssen, Straßen und Bergen.">
+<meta name="theme-color" content="#16304a">
 <title>Unser Landkreis Gotha – Kartenentdecker</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%97%BA%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M35.3 56.8 L34.2 59.0 L33.6 60.0 L31.4 59.5 L30.2 58.9 L29.1 59.8 L27.3 58.0 L23.6 57.1 L21.4 53.6 L21.5 51.0 L19.4 50.5 L19.3 48.7 L19.5 45.7 L17.9 43.5 L16.7 43.0 L12.7 40.8 L9.0 41.9 L7.1 39.5 L8.6 35.8 L10.1 33.8 L10.7 32.7 L13.4 32.3 L14.2 32.7 L14.8 34.6 L15.2 32.6 L15.0 29.8 L15.8 27.8 L16.8 25.5 L17.2 24.5 L15.1 24.4 L14.0 22.8 L14.0 20.9 L15.3 20.8 L17.0 19.5 L18.1 19.1 L20.6 17.9 L22.5 16.5 L24.4 16.1 L26.2 14.4 L26.6 15.1 L28.4 15.1 L29.6 13.8 L31.6 14.4 L33.5 12.7 L34.2 10.8 L33.3 8.6 L33.9 7.0 L33.9 5.7 L36.0 4.5 L37.5 4.0 L38.8 4.9 L41.6 6.2 L47.7 6.1 L49.9 7.9 L49.4 10.7 L48.9 11.7 L48.6 13.4 L48.0 15.9 L48.1 19.7 L50.0 19.9 L49.3 22.4 L48.3 24.4 L49.8 25.2 L51.4 28.1 L54.8 27.3 L56.7 29.1 L57.0 31.1 L54.2 32.6 L54.0 34.7 L51.9 34.1 L50.8 35.3 L49.2 37.0 L48.3 39.2 L47.2 39.9 L45.9 41.4 L45.6 42.4 L47.7 42.8 L47.1 44.8 L44.6 44.8 L44.3 45.7 L45.5 46.1 L45.8 47.3 L44.8 48.4 L45.0 49.9 L43.9 51.5 L43.3 52.4 L42.2 52.6 L40.1 52.8 L39.0 54.5 L38.3 57.6 L38.2 59.6 L36.6 58.1 L35.5 56.7Z%27 fill=%27%23e8590c%27 stroke=%27%23fff%27 stroke-width=%273%27 stroke-linejoin=%27round%27 paint-order=%27stroke%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="lib/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -13,32 +14,41 @@
 <div id="app">
 
   <header id="kopf">
-    <button id="menueknopf" class="rundknopf" aria-label="Menü öffnen oder schließen" aria-expanded="false">☰</button>
-    <h1><span aria-hidden="true">🗺️</span> Unser Landkreis Gotha</h1>
-    <button id="heimknopf" class="rundknopf" aria-label="Ganzen Landkreis zeigen" title="Ganzen Landkreis zeigen">🏠</button>
+    <button id="menueknopf" class="rundknopf" aria-label="Menü öffnen oder schließen" aria-expanded="false" aria-controls="seitenleiste"><span data-sym="menue" data-gr="26"></span></button>
+    <span class="logo" data-logo="" aria-hidden="true"></span>
+    <span class="kopf-titel">Unser Landkreis Gotha</span>
   </header>
 
   <aside id="seitenleiste" aria-label="Kartenmenü">
+    <div class="marke">
+      <span class="logo" data-logo="" aria-hidden="true"></span>
+      <div>
+        <h1>Unser Landkreis Gotha</h1>
+        <p>Entdecke deine Heimat</p>
+      </div>
+    </div>
+
     <div class="suche">
       <label for="suchfeld" class="sr-only">Ort suchen</label>
-      <input id="suchfeld" type="search" placeholder="🔍 Suche einen Ort …" autocomplete="off" spellcheck="false" aria-controls="suchtreffer">
+      <span class="suche-symbol" data-sym="suche" data-gr="22" aria-hidden="true"></span>
+      <input id="suchfeld" type="search" placeholder="Suche einen Ort …" autocomplete="off" spellcheck="false" aria-controls="suchtreffer">
       <ul id="suchtreffer" role="listbox" hidden></ul>
     </div>
 
-    <section aria-labelledby="ueb-ansichten">
+    <section class="block" aria-labelledby="ueb-ansichten">
       <h2 id="ueb-ansichten">Was möchtest du sehen?</h2>
-      <p class="hinweis">Tippe auf die Knöpfe. Du kannst alles mischen!</p>
+      <p class="hinweis">Tippe auf die Kacheln. Du kannst alles mischen.</p>
       <div id="ebenenliste"></div>
     </section>
 
-    <section aria-labelledby="ueb-schnell">
-      <h2 id="ueb-schnell">Schnellauswahl</h2>
-      <div id="schnellwahl" class="chips"></div>
+    <section class="aktionen">
+      <button id="quizknopf" class="grossknopf quiz" type="button"><span data-sym="quiz" data-gr="28" aria-hidden="true"></span><span class="gk-text"><strong>Quiz: Wo liegt …?</strong><small>Finde Orte und sammle Sterne</small></span></button>
+      <button id="legendenknopf" class="grossknopf" type="button"><span data-sym="frage" data-gr="28" aria-hidden="true"></span><span class="gk-text"><strong>Was bedeutet das?</strong><small>Zeichen und Farben erklärt</small></span></button>
     </section>
 
-    <section class="aktionen">
-      <button id="quizknopf" class="grossknopf quiz">🎯 Quiz: Wo liegt …?</button>
-      <button id="legendenknopf" class="grossknopf">🔎 Was bedeutet das?</button>
+    <section aria-labelledby="ueb-schnell">
+      <h2 id="ueb-schnell" class="klein-titel">Schnellauswahl</h2>
+      <div id="schnellwahl" class="chips"></div>
     </section>
 
     <footer id="quellen">
@@ -53,10 +63,13 @@
   <main id="kartenbereich">
     <div id="karte" role="application" aria-label="Karte des Landkreises Gotha"></div>
 
-    <div id="kompass" aria-hidden="true"><svg viewBox="0 0 60 60" width="60" height="60"><circle cx="30" cy="30" r="27" fill="#fff" fill-opacity=".85" stroke="#495057" stroke-width="2"/><path d="M30 8 L38 30 L30 26 L22 30 Z" fill="#e03131"/><path d="M30 52 L38 30 L30 34 L22 30 Z" fill="#868e96"/><text x="30" y="21" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" stroke="#e03131" stroke-width="0" font-family="sans-serif">N</text></svg></div>
+    <div id="kartenknoepfe">
+      <button id="heimknopf" type="button" aria-label="Ganzen Landkreis zeigen" title="Ganzen Landkreis zeigen"><span data-sym="ganz" data-gr="22" aria-hidden="true"></span><span class="hk-text">Ganzer Landkreis</span></button>
+      <div id="kompass" aria-hidden="true"><svg viewBox="0 0 60 60" width="56" height="56"><circle cx="30" cy="30" r="27" fill="#fff" fill-opacity=".92" stroke="#16304a" stroke-width="2.5"/><path d="M30 7 L38.5 30 L30 25.5 L21.5 30 Z" fill="#e03131"/><path d="M30 53 L38.5 30 L30 34.5 L21.5 30 Z" fill="#9fb0c0"/><circle cx="30" cy="30" r="2.6" fill="#16304a"/><text x="30" y="21.5" text-anchor="middle" font-size="11.5" font-weight="800" fill="#fff" font-family="Nunito, sans-serif">N</text></svg></div>
+    </div>
 
     <div id="legende" class="karte-box" hidden>
-      <div class="box-kopf"><strong>Was bedeutet das?</strong><button class="schliessen" data-schliessen="legende" aria-label="Schließen">✕</button></div>
+      <div class="box-kopf"><strong>Was bedeutet das?</strong><button class="schliessen" type="button" data-schliessen="legende" aria-label="Schließen"><span data-sym="schliessen" data-gr="20"></span></button></div>
       <div id="legendeninhalt"></div>
     </div>
 
@@ -65,14 +78,15 @@
     <div id="quizleiste" class="karte-box" hidden></div>
 
     <div id="willkommen" class="deckblatt" hidden>
-      <div class="willkommenskarte">
-        <h2>Hallo, Kartenentdecker! 👋</h2>
-        <ol>
-          <li>Tippe links auf die bunten Knöpfe, um Dinge auf der Karte <strong>ein- und auszuschalten</strong>.</li>
-          <li>Tippe auf der Karte auf einen <strong>Ort</strong>, eine <strong>Gemeinde</strong> oder einen <strong>Fluss</strong>. Dann erfährst du mehr.</li>
-          <li>Spiele das <strong>Quiz</strong> und sammle ⭐ Sterne!</li>
-        </ol>
-        <button id="losgehts" class="grossknopf quiz">Los geht's!</button>
+      <div class="willkommenskarte" role="dialog" aria-modal="true" aria-labelledby="willkommen-titel">
+        <span class="logo gross" data-logo="" aria-hidden="true"></span>
+        <h2 id="willkommen-titel">Hallo, Kartenentdecker!</h2>
+        <ul class="schritte">
+          <li><span class="schritt-symbol" data-sym="schalter" data-gr="26" aria-hidden="true"></span><span>Schalte mit den <strong>bunten Kacheln</strong> Dinge auf der Karte an und aus.</span></li>
+          <li><span class="schritt-symbol" data-sym="hand" data-gr="26" aria-hidden="true"></span><span>Tippe auf einen <strong>Ort</strong>, eine <strong>Gemeinde</strong> oder einen <strong>Fluss</strong>. Dann erfährst du mehr.</span></li>
+          <li><span class="schritt-symbol" data-sym="stern" data-gr="26" aria-hidden="true"></span><span>Spiele das <strong>Quiz</strong> und sammle Sterne.</span></li>
+        </ul>
+        <button id="losgehts" class="grossknopf start" type="button">Los geht's</button>
       </div>
     </div>
   </main>
@@ -81,6 +95,7 @@
 <script src="lib/leaflet/leaflet.js"></script>
 <script src="data/grenzen.js"></script>
 <script src="data/osm.js"></script>
+<script src="js/symbole.js"></script>
 <script src="js/relief.js"></script>
 <script src="js/beschriftung.js"></script>
 <script src="js/quiz.js"></script>

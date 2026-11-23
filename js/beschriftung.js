@@ -111,19 +111,24 @@
     items.forEach(function (o) {
       if (o.art === 'punkt' && o.radius) {
         var r = o.radius + 1;
-        boxen.push({ x: o.p.x - r, y: o.p.y - r, w: 2 * r, h: 2 * r, eigner: o, markierung: true });
+        boxen.push({ x: o.p.x - r, y: o.p.y - r, w: 2 * r, h: 2 * r, eigner: o, markierung: true, prio: o.prio || 0 });
       }
     });
 
     items.sort(function (a, b) { return (b.prio || 0) - (a.prio || 0); });
     var platziert = [], gesetzt = {};
 
-    // nurMarkierungenIgnorieren: Notlösung für wichtige Orte - das Etikett darf dann eine
-    // Markierung (z. B. einen Gipfel) berühren, aber niemals ein anderes Etikett.
-    function frei(box, eigner, nurMarkierungenIgnorieren) {
+    // Stufen der Platzsuche für wichtige Etiketten (prio >= 85):
+    //   0 = nichts darf berührt werden
+    //   1 = kleine, unwichtigere Markierungen (z. B. Dorfpunkte) dürfen überdeckt werden
+    //   2 = Notlösung nur für Einträge mit "notfall: true" (Städte): jede Markierung darf berührt werden (aber nie ein anderes Etikett)
+    function frei(box, eigner, stufe) {
       for (var i = 0; i < boxen.length; i++) {
-        if (nurMarkierungenIgnorieren && boxen[i].markierung) continue;
-        if (boxen[i].eigner !== eigner && schneidet(box, boxen[i])) return false;
+        var bx = boxen[i];
+        if (bx.eigner === eigner) continue;
+        if (bx.markierung && stufe >= 2) continue;
+        if (bx.markierung && stufe === 1 && bx.prio < (eigner.prio || 0)) continue;
+        if (schneidet(box, bx)) return false;
       }
       return true;
     }
@@ -148,7 +153,8 @@
         ];
         for (var i = 0; i < cands.length && !treffer; i++) if (frei(cands[i].b, o)) treffer = cands[i];
         if (!treffer && (o.prio || 0) >= 85) {
-          for (var i2 = 0; i2 < cands.length && !treffer; i2++) if (frei(cands[i2].b, o, true)) treffer = cands[i2];
+          for (var i2 = 0; i2 < cands.length && !treffer; i2++) if (frei(cands[i2].b, o, 1)) treffer = cands[i2];
+          if (!treffer && o.notfall) for (var i3 = 0; i3 < cands.length && !treffer; i3++) if (frei(cands[i3].b, o, 2)) treffer = cands[i3];
         }
         if (treffer) { boxen.push({ x: treffer.b.x, y: treffer.b.y, w: w, h: h, eigner: o }); platziert.push({ o: o, t: treffer.t }); }
       } else if (o.art === 'mitte') {

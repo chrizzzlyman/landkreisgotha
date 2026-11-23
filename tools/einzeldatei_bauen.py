@@ -3,6 +3,7 @@
 
     python3 tools/einzeldatei_bauen.py            ->  gotha-karte-einzeldatei.html
 """
+import base64
 import os
 import re
 import sys
@@ -20,8 +21,25 @@ html = lies("index.html")
 
 
 def css(m):
-    text = lies(m.group(1))
-    text = re.sub(r"url\((?:images/)[^)]*\)", "url(data:,)", text)      # ungenutzte Leaflet-Bilder
+    pfad = m.group(1)
+    text = lies(pfad)
+    basis = os.path.dirname(pfad)
+
+    def datei(u):
+        rel = u.group(1).strip()
+        if rel.startswith("data:"):
+            return u.group(0)
+        if rel.startswith("images/"):                       # ungenutzte Leaflet-Bilder
+            return "url(data:,)"
+        voll = os.path.normpath(os.path.join(WURZEL, basis, rel))
+        endung = os.path.splitext(voll)[1].lower()
+        mime = {".woff2": "font/woff2", ".svg": "image/svg+xml", ".png": "image/png"}.get(endung)
+        if not mime or not os.path.exists(voll):
+            return "url(data:,)"
+        with open(voll, "rb") as f:
+            return "url(data:%s;base64,%s)" % (mime, base64.b64encode(f.read()).decode("ascii"))
+
+    text = re.sub(r"url\(\s*[\"']?([^)\"']+)[\"']?\s*\)", datei, text)
     return "<style>\n" + text + "\n</style>"
 
 

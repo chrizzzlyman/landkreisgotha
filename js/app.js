@@ -43,15 +43,17 @@
   var hatB = STRASSEN.some(function (s) { return s.k === 'B'; });
   var ersteA = (STRASSEN.filter(function (s) { return s.k === 'A'; })[0] || { r: 'A 4' }).r;
   var ersteB = (STRASSEN.filter(function (s) { return s.k === 'B'; })[0] || { r: 'B 7' }).r;
+  var SYM = NS.Symbole;
+  // farbe = Farbe der Kachel (wenn eingeschaltet), hell = Farbe des Symbolkreises (wenn ausgeschaltet), text = Schriftfarbe auf der Kachel
   var EBENEN = [
-    { id: 'kreis', gruppe: 'Grenzen', bild: '🗺️', titel: 'Landkreis & Nachbarn', farbe: '#d9480f', hell: '#ffe8cc', an: true, daten: true },
-    { id: 'gemeinden', gruppe: 'Grenzen', bild: '🏘️', titel: 'Gemeinden', farbe: '#862e9c', hell: '#f3d9fa', an: false, daten: true },
-    { id: 'staedte', gruppe: 'Orte', bild: '🏙️', titel: 'Städte', farbe: '#e03131', hell: '#ffe3e3', an: true, daten: true },
-    { id: 'doerfer', gruppe: 'Orte', bild: '🏡', titel: 'Dörfer', farbe: '#f08c00', hell: '#fff0d0', an: false, daten: ORTE.some(function (o) { return o.t === 'dorf'; }) },
-    { id: 'wasser', gruppe: 'Natur', bild: '🌊', titel: 'Flüsse & Seen', farbe: '#1c7ed6', hell: '#d0ebff', an: false, daten: WASSER.length + SEEN.length > 0 },
-    { id: 'berge', gruppe: 'Natur', bild: '⛰️', titel: 'Berge & Täler', farbe: '#8c5a2b', hell: '#f0dcc3', an: false, daten: true },
-    { id: 'autobahn', gruppe: 'Straßen', bild: '<span class="schild autobahn">' + esc(ersteA) + '</span>', titel: 'Autobahnen', farbe: '#1d4ed8', hell: '#dbe4ff', an: false, daten: hatA },
-    { id: 'bundesstr', gruppe: 'Straßen', bild: '<span class="schild bundesstr">' + esc(ersteB) + '</span>', titel: 'Bundesstraßen', farbe: '#e0a800', hell: '#fff3bf', an: false, daten: hatB }
+    { id: 'kreis', gruppe: 'Grenzen', sym: 'kreis', titel: 'Landkreis & Nachbarn', farbe: '#c2410c', hell: '#ffe8cc', an: true, daten: true },
+    { id: 'gemeinden', gruppe: 'Grenzen', sym: 'gemeinden', titel: 'Gemeinden', farbe: '#862e9c', hell: '#f3d9fa', an: false, daten: true },
+    { id: 'staedte', gruppe: 'Orte', sym: 'stadt', titel: 'Städte', farbe: '#c92a2a', hell: '#ffe3e3', an: true, daten: true },
+    { id: 'doerfer', gruppe: 'Orte', sym: 'dorf', titel: 'Dörfer', farbe: '#ffb020', hell: '#fff0d0', text: '#16304a', an: false, daten: ORTE.some(function (o) { return o.t === 'dorf'; }) },
+    { id: 'wasser', gruppe: 'Natur', sym: 'wasser', titel: 'Flüsse & Seen', farbe: '#1c6fc2', hell: '#d0ebff', an: false, daten: WASSER.length + SEEN.length > 0 },
+    { id: 'berge', gruppe: 'Natur', sym: 'berg', titel: 'Berge & Täler', farbe: '#8c5a2b', hell: '#f0dcc3', an: false, daten: true },
+    { id: 'autobahn', gruppe: 'Straßen', schild: '<span class="schild autobahn">' + esc(ersteA) + '</span>', titel: 'Auto\u00ADbahnen', farbe: '#1d4ed8', hell: '#dbe4ff', an: false, daten: hatA },
+    { id: 'bundesstr', gruppe: 'Straßen', schild: '<span class="schild bundesstr">' + esc(ersteB) + '</span>', titel: 'Bundes\u00ADstraßen', farbe: '#ffd43b', hell: '#fff3bf', text: '#16304a', an: false, daten: hatB }
   ];
   var an = {};
   EBENEN.forEach(function (e) { an[e.id] = e.daten && e.an; });
@@ -84,7 +86,16 @@
     L.popup({ maxWidth: 300, autoPanPadding: [30, 30], closeButton: true })
       .setLatLng(latlng).setContent(infoHtml(id)).openOn(map);
   }
-  function art(text) { return '<span class="art">' + esc(text) + '</span>'; }
+  // Zuordnung "Art" -> Symbol und Farben (Chip im Popup, Symbol in der Suche)
+  var ART_STIL = {
+    'Stadt': ['stadt', '#c92a2a', '#ffe3e3'], 'Stadt außerhalb': ['stadt', '#3f4f5f', '#e9edf1'], 'Dorf': ['dorf', '#8a4b00', '#fff0d0'], 'Kleiner Ort': ['dorf', '#8a4b00', '#fff0d0'],
+    'Gemeinde': ['gemeinden', '#862e9c', '#f3d9fa'], 'Fluss': ['wasser', '#1c6fc2', '#d0ebff'], 'Bach': ['wasser', '#1c6fc2', '#d0ebff'], 'Kanal': ['wasser', '#1c6fc2', '#d0ebff'],
+    'See': ['tropfen', '#1c6fc2', '#d0ebff'], 'Talsperre': ['tropfen', '#1c6fc2', '#d0ebff'], 'Stausee': ['tropfen', '#1c6fc2', '#d0ebff'], 'Teich': ['tropfen', '#1c6fc2', '#d0ebff'],
+    'Autobahn': ['strasse', '#1d4ed8', '#dbe4ff'], 'Bundesstraße': ['strasse', '#7a5a00', '#fff3bf'], 'Nachbarkreis': ['kreis', '#46607a', '#e9edf1'], 'Nachbar': ['kreis', '#46607a', '#e9edf1'],
+    'Landkreis': ['kreis', '#c2410c', '#ffe8cc'], 'Berg': ['berg', '#8c5a2b', '#f0dcc3']
+  };
+  function artStil(text) { return ART_STIL[String(text).split(' · ')[0]] || (String(text).indexOf('Berg') === 0 ? ART_STIL['Berg'] : ['ort', '#16304a', '#e6eff7']); }
+  function art(text) { var s = artStil(text); return '<span class="art" style="--art-farbe:' + s[1] + ';--art-hell:' + s[2] + '">' + SYM.svg(s[0], 16) + esc(text) + '</span>'; }
   function gemName(ags) { var g = gemProp[ags]; return g ? (g.art === 'Stadt' ? 'Stadt ' : 'Gemeinde ') + g.n : null; }
 
   function infoHtml(id) {
@@ -235,13 +246,13 @@
 
   // ------------------------------------------------------------ Ebene: Berge & Täler (Höhenkarte + Gipfel)
   var gruppeGipfel = L.layerGroup();
-  // Die Berge sind nach Höhe sortiert: die höchsten zeigen wir schon beim Herauszoomen, die anderen erst beim Hineinzoomen
-  function gipfelAb(b, i) { return i < 6 ? 9 : i < 10 ? 10 : i < 14 ? 11 : 12; }
+  // Es gibt nur acht Berge, und alle sollen sofort zu sehen sein (Ab Zoomstufe 9 = ganz herausgezoomt).
+  function gipfelAb() { return 9; }
   var gipfelMarker = [];
   BERGE.forEach(function (b, i) {
     var id = 'berg:' + i;
     registriere(id, { art: 'berg', kat: 'berg', name: b.n, typ: 'punkt', ll: ll(b.p), daten: b });
-    var m = L.marker(ll(b.p), { icon: L.divIcon({ className: 'gipfel', html: '<span>▲</span>', iconSize: [26, 22], iconAnchor: [13, 15] }), keyboard: false, riseOnHover: false });
+    var m = L.marker(ll(b.p), { icon: L.divIcon({ className: 'gipfel', html: '<svg viewBox="0 0 26 22" aria-hidden="true"><path d="M13 2 24 20H2z" fill="#7f3f12" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke"/><path d="M13 2l4.4 7.2-2.2-1.4L13 9.8l-2.2-2-2.2 1.4z" fill="#fff" fill-opacity=".85"/></svg>', iconSize: [26, 22], iconAnchor: [13, 15] }), keyboard: false, riseOnHover: false });
     m.on('click', function (e) { L.DomEvent.stop(e); tippe(id, ll(b.p)); });
     gipfelMarker.push({ m: m, ab: gipfelAb(b, i) });
   });
@@ -323,9 +334,11 @@
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'ebene'; b.setAttribute('data-id', e.id);
       b.setAttribute('aria-pressed', an[e.id] ? 'true' : 'false');
-      b.style.setProperty('--ebene-farbe', e.farbe); b.style.setProperty('--ebene-farbe-hell', e.hell);
+      b.style.setProperty('--ebene-farbe', e.farbe); b.style.setProperty('--ebene-hell', e.hell); if (e.text) b.style.setProperty('--ebene-text', e.text);
       if (!e.daten) { b.disabled = true; b.title = 'Dafür fehlen noch Daten'; }
-      b.innerHTML = '<span class="haken" aria-hidden="true">✓</span><span class="bild" aria-hidden="true">' + e.bild + '</span><span>' + esc(e.titel) + '</span>' + (!e.daten ? '<small>(Daten fehlen)</small>' : '');
+      b.innerHTML = '<span class="bild' + (e.schild ? ' schildbild' : '') + '" aria-hidden="true">' + (e.schild || SYM.svg(e.sym, 24)) + '</span>' +
+        '<span class="titel">' + esc(e.titel) + (!e.daten ? '<small>(Daten fehlen)</small>' : '') + '</span>' +
+        '<span class="haken" aria-hidden="true">' + SYM.svg('haken', 12) + '</span>';
       b.addEventListener('click', function () { schalte(e.id, !an[e.id]); });
       liste.appendChild(b);
     });
@@ -485,13 +498,13 @@
     }
     ORTE.forEach(function (o) {
       var t = o.t, aktiv, prio, gr, klasse = t;
-      if (t === 'stadt') { aktiv = an.staedte && !verb.stadt; prio = 90; gr = z >= 11 ? 19 : 17; }
+      if (t === 'stadt') { aktiv = an.staedte && !verb.stadt; prio = 95; gr = z >= 11 ? 19 : 17; }
       else if (t === 'nachbarstadt') { aktiv = an.staedte && !verb.nachbarstadt && z <= 12; prio = 70; gr = 14; }
       else if (t === 'dorf') { aktiv = an.doerfer && !verb.dorf && z >= 10; prio = 40 + Math.min(14, (o.e || 0) / 400); gr = z >= 12 ? 16 : 14; }
       else { aktiv = an.doerfer && !verb.dorf && z >= 12; prio = 20; gr = 13; }
       if (!aktiv) return;
       var s = STIL[t] || STIL.dorf;
-      out.push({ schluessel: o.id, text: o.n, klasse: klasse, art: 'punkt', punkt: o.ll, radius: s.r + (s.rand / 2), prio: prio, groesse: gr, fett: t === 'stadt' ? '900' : '800' });
+      out.push({ schluessel: o.id, text: o.n, klasse: klasse, art: 'punkt', punkt: o.ll, radius: s.r + (s.rand / 2), prio: prio, notfall: t === 'stadt', groesse: gr, fett: t === 'stadt' ? '900' : '800' });
     });
     if (an.berge && verb.berg) {
       // Quiz „Berge“: Gipfel bleiben als Markierungen sichtbar, nur die Namen fehlen
@@ -500,7 +513,7 @@
     if (an.berge && !verb.berg) {
       BERGE.forEach(function (b, i) {
         if (z < gipfelAb(b, i)) return;
-        out.push({ schluessel: 'berg:' + i, text: b.n + ' ' + b.h + ' m', html: esc(b.n) + ' <b>' + b.h + ' m</b>', klasse: 'berg', art: 'punkt', punkt: ll(b.p), radius: 9, markierungEl: gipfelMarker[i].m.getElement.bind(gipfelMarker[i].m), prio: 60 + Math.min(20, b.h / 50), groesse: 14, fett: '800' });
+        out.push({ schluessel: 'berg:' + i, text: b.n + ' ' + b.h + ' m', html: esc(b.n) + ' <b>' + b.h + ' m</b>', klasse: 'berg', art: 'punkt', punkt: ll(b.p), radius: 9, markierungEl: gipfelMarker[i].m.getElement.bind(gipfelMarker[i].m), prio: 97 - i * 0.1, groesse: 14, fett: '800' });   // die acht Berge sind alle wichtig: sie bekommen ihren Platz zuerst
       });
     }
     if (an.wasser && !verb.wasser) {
@@ -523,6 +536,11 @@
     return out;
   }
   var beschriftung = new NS.Beschriftung(map, { holeEtiketten: holeEtiketten });
+  // Etiketten neu messen, sobald die Schriften geladen sind (sonst stimmen die Breiten nicht)
+  if (document.fonts && document.fonts.load) {
+    Promise.all([document.fonts.load('800 15px Nunito'), document.fonts.load('900 15px Nunito'), document.fonts.load('600 20px Fredoka')])
+      .then(function () { beschriftung.cache = {}; beschriftung.aktualisiere(); }, function () { /* Ersatzschrift bleibt */ });
+  }
 
   // ------------------------------------------------------------ Hervorheben (Quiz / Suche)
   var hervorGruppe = L.layerGroup().addTo(map), hervorTimer = null;
@@ -587,7 +605,6 @@
     e.sort(function (a, b) { return a.rang - b.rang; });
     return e.slice(0, 8).map(function (a) { return a.x; });
   }
-  var ICON_ART = { 'Stadt': '🏙️', 'Dorf': '🏡', 'Kleiner Ort': '🏡', 'Gemeinde': '🏘️', 'Fluss': '🌊', 'Bach': '🌊', 'Kanal': '🌊', 'See': '💧', 'Talsperre': '💧', 'Stausee': '💧', 'Teich': '💧', 'Autobahn': '🛣️', 'Bundesstraße': '🛣️', 'Nachbarkreis': '🗺️', 'Landkreis': '🗺️', 'Stadt außerhalb': '🏙️' };
   function zeigeTreffer() {
     var ul = $('suchtreffer'), q = $('suchfeld').value;
     treffer = sucheAus(q); auswahl = -1;
@@ -597,8 +614,8 @@
     treffer.forEach(function (t, i) {
       var li = document.createElement('li');
       li.setAttribute('role', 'option'); li.setAttribute('aria-selected', 'false');
-      var ik = ICON_ART[t.art.split(' · ')[0]] || (t.art.indexOf('Berg') === 0 ? '⛰️' : '📍');
-      li.innerHTML = '<span aria-hidden="true">' + ik + '</span><span>' + esc(t.text) + '</span><small>' + esc(t.art) + '</small>';
+      var st = artStil(t.art);
+      li.innerHTML = '<span class="ts" aria-hidden="true" style="background:' + st[2] + ';color:' + st[1] + '">' + SYM.svg(st[0], 20) + '</span><span>' + esc(t.text) + '</span><small>' + esc(t.art) + '</small>';
       li.addEventListener('mousedown', function (ev) { ev.preventDefault(); waehle(t); });
       li.addEventListener('touchend', function (ev) { ev.preventDefault(); waehle(t); });
       ul.appendChild(li);
@@ -665,15 +682,15 @@
   function kategorien() {
     var K = [];
     var staedteZ = ORTE.filter(function (o) { return o.t === 'stadt'; });
-    if (staedteZ.length >= 3) K.push({ id: 'stadt', titel: 'Städte', bild: '🏙️', frage: 'die Stadt', ebenen: ['kreis', 'staedte'], verberge: ['stadt'], ziele: staedteZ.map(function (o) { return { id: o.id, name: o.n }; }) });
-    K.push({ id: 'gemeinde', titel: 'Gemeinden', bild: '🏘️', frage: 'die Gemeinde', ebenen: ['kreis', 'gemeinden'], verberge: ['gemeinde'],
+    if (staedteZ.length >= 3) K.push({ id: 'stadt', titel: 'Städte', sym: 'stadt', farbe: '#c92a2a', hell: '#ffe3e3', frage: 'die Stadt', suche: 'die Stadt', ebenen: ['kreis', 'staedte'], verberge: ['stadt'], ziele: staedteZ.map(function (o) { return { id: o.id, name: o.n }; }) });
+    K.push({ id: 'gemeinde', titel: 'Gemeinden', sym: 'gemeinden', farbe: '#862e9c', hell: '#f3d9fa', frage: 'die Gemeinde', suche: 'die Gemeinde', ebenen: ['kreis', 'gemeinden'], verberge: ['gemeinde'],
              ziele: gemFeat.map(function (f) { return { id: 'gemeinde:' + f.properties.id, name: f.properties.n }; }) });
     var dorfZ = ORTE.filter(function (o) { return o.t === 'dorf'; });
-    if (dorfZ.length >= 8) K.push({ id: 'dorf', titel: 'Dörfer', bild: '🏡', frage: 'das Dorf', ebenen: ['kreis', 'gemeinden', 'doerfer'], verberge: ['dorf', 'gemeinde'], ziele: dorfZ.map(function (o) { return { id: o.id, name: o.n }; }) });
-    var bergZ = BERGE.map(function (b, i) { return { id: 'berg:' + i, name: b.n, h: b.h }; }).filter(function (b) { return b.h >= 550; }).slice(0, 8);
-    if (bergZ.length >= 5) K.push({ id: 'berg', titel: 'Berge', bild: '⛰️', frage: 'den Berg', ebenen: ['kreis', 'berge'], verberge: ['berg'], ziele: bergZ });
+    if (dorfZ.length >= 8) K.push({ id: 'dorf', titel: 'Dörfer', sym: 'dorf', farbe: '#8a4b00', hell: '#fff0d0', frage: 'das Dorf', suche: 'das Dorf', ebenen: ['kreis', 'gemeinden', 'doerfer'], verberge: ['dorf', 'gemeinde'], ziele: dorfZ.map(function (o) { return { id: o.id, name: o.n }; }) });
+    var bergZ = BERGE.map(function (b, i) { return { id: 'berg:' + i, name: b.n, h: b.h }; });
+    if (bergZ.length >= 5) K.push({ id: 'berg', titel: 'Berge', sym: 'berg', farbe: '#8c5a2b', hell: '#f0dcc3', frage: 'der Berg', suche: 'den Berg', ebenen: ['kreis', 'berge'], verberge: ['berg'], ziele: bergZ });
     var flussZ = WASSER.filter(function (w) { return w.k === 'fluss' && w.km >= 5; }).slice(0, 8).map(function (w) { return { id: 'wasser:' + w.n, name: w.n }; });
-    if (flussZ.length >= 4) K.push({ id: 'fluss', titel: 'Flüsse', bild: '🌊', frage: 'den Fluss', ebenen: ['kreis', 'wasser'], verberge: ['wasser'], ziele: flussZ });
+    if (flussZ.length >= 4) K.push({ id: 'fluss', titel: 'Flüsse', sym: 'wasser', farbe: '#1c6fc2', hell: '#d0ebff', frage: 'der Fluss', suche: 'den Fluss', ebenen: ['kreis', 'wasser'], verberge: ['wasser'], ziele: flussZ });
     return K;
   }
   if (NS.Quiz) {

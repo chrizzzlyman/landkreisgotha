@@ -55,10 +55,20 @@ NACHBAR_MIN_GRENZE_M = 500.0
 # Redaktionelle Auswahl fuer Kinder (nicht jede OSM-Stadt ist fuer Grundschueler wichtig)
 NACHBARSTAEDTE = ["Erfurt", "Eisenach", "Arnstadt", "Bad Langensalza", "Mühlhausen", "Sömmerda", "Ilmenau",
                   "Zella-Mehlis", "Schmalkalden", "Oberhof", "Ruhla"]
-BERGE_MIN_HOEHE = 550          # Meter
-BERGE_MIN_ABSTAND_M = 2500     # Gipfel naeher beieinander werden nur einmal gezeigt (der hoehere)
-BERGE_MAX = 40
-BERGE_AUSSCHLUSS = ("zigeuner",)    # Namen, die wir Kindern nicht anzeigen
+# Berge: genau diese acht (Wunschliste der Lehrkraft). "osm" = Name in OpenStreetMap, "nahe" = ungefaehre Lage
+# (lon, lat), damit bei mehreren gleichnamigen Gipfeln der richtige gewaehlt wird.
+# Spiessberg steht nicht in den OSM-Daten: Lage und Hoehe von komoot.com (749 m).
+# "Hainsberg" gibt es im Landkreis nicht; gemeint ist laut Lehrkraft der Hainberg bei Teutleben (OSM: 391 m).
+BERGE_LISTE = [
+    {"n": "Hainsberg", "osm": "Hainberg", "nahe": (10.5432, 50.9624)},
+    {"n": "Abtsberg", "osm": "Abtsberg", "nahe": (10.5379, 50.8545)},
+    {"n": "Großer Seeberg", "osm": "Großer Seeberg", "nahe": (10.7871, 50.9244)},
+    {"n": "Körnberg", "osm": "Körnberg", "nahe": (10.5716, 50.8481)},
+    {"n": "Kienberg", "osm": "Kienberg", "nahe": (10.7415, 50.7788)},
+    {"n": "Spießberg", "manuell": (10.54005, 50.82106, 749)},
+    {"n": "Saukopf", "osm": "Saukopf", "nahe": (10.6720, 50.7263)},
+    {"n": "Großer Inselsberg", "osm": "Großer Inselsberg", "nahe": (10.4665, 50.8512)},
+]
 BACH_MIN_KM = 8.0
 FLUSS_MIN_KM = 3.0
 SEE_MIN_HA = 3.0
@@ -412,31 +422,31 @@ def baue_osm(osm_pfad):
     orte = [o for o in orte if o["t"] != "nachbarstadt"] + nb
     orte.sort(key=lambda o: (o["t"], o["n"]))
 
-    # --- Berge: nur die hoechsten, nicht zu dicht beieinander
-    berge_roh = []
-    for e in el:
-        if e["type"] == "node" and e.get("tags", {}).get("natural") == "peak" and e["tags"].get("name"):
-            name = e["tags"]["name"]
-            if any(w in name.lower() for w in BERGE_AUSSCHLUSS):
-                continue
+    # --- Berge: genau die Liste BERGE_LISTE
+    berge = []
+    for w in BERGE_LISTE:
+        if "manuell" in w:
+            lon, lat, h = w["manuell"]
+        else:
+            kandidaten = []
+            nx, ny = TO_UTM.transform(*w["nahe"])
+            for e in el:
+                t = e.get("tags", {})
+                if e["type"] == "node" and t.get("natural") == "peak" and t.get("name") == w["osm"]:
+                    x, y = TO_UTM.transform(e["lon"], e["lat"])
+                    kandidaten.append((math.hypot(x - nx, y - ny), e))
+            kandidaten.sort(key=lambda k: k[0])
+            if not kandidaten or kandidaten[0][0] > 1500:
+                raise SystemExit("FEHLER: Berg %r nicht in den OSM-Daten gefunden" % w["n"])
+            e = kandidaten[0][1]
+            lon, lat = e["lon"], e["lat"]
             ele = re.sub(r"[^\d.,]", "", e["tags"].get("ele", "")).replace(",", ".")
-            try:
-                h = int(round(float(ele)))
-            except ValueError:
-                continue
-            x, y = TO_UTM.transform(e["lon"], e["lat"])
-            if h < BERGE_MIN_HOEHE or not kreis.buffer(300).contains(Point(x, y)):
-                continue
-            berge_roh.append((h, name, e["lon"], e["lat"], x, y))
-    berge_roh.sort(key=lambda b: -b[0])
-    berge, behalten = [], []
-    for h, name, lon, lat, x, y in berge_roh:
-        if len(berge) >= BERGE_MAX:
-            break
-        if any(math.hypot(x - bx, y - by) < BERGE_MIN_ABSTAND_M for bx, by in behalten):
-            continue
-        behalten.append((x, y))
-        berge.append({"n": name, "h": h, "p": [round(lon, 5), round(lat, 5)]})
+            h = int(round(float(ele)))
+        x, y = TO_UTM.transform(lon, lat)
+        if not kreis.buffer(300).contains(Point(x, y)):
+            print("  WARNUNG: %s liegt ausserhalb des Landkreises!" % w["n"])
+        berge.append({"n": w["n"], "h": h, "p": [round(lon, 5), round(lat, 5)]})
+    berge.sort(key=lambda b: -b["h"])
 
     # --- Strassen
     strassen_roh = defaultdict(list)
