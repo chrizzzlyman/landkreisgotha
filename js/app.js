@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   var NS = window.Gotha = window.Gotha || {};
+  NS.VERSION = '24.11.2026, Version 2';   // wird unten im Menü angezeigt: so sieht man, ob die neue Version geladen wurde
   var G = window.GOTHA_GRENZEN, O = window.GOTHA_OSM || null;
   function $(id) { return document.getElementById(id); }
 
@@ -69,6 +70,14 @@
     maxBounds: grenzen.pad(0.9), maxBoundsViscosity: 0.8, wheelPxPerZoomLevel: 100, tap: true
   });
   L.control.zoom({ position: 'topleft', zoomInTitle: 'Größer', zoomOutTitle: 'Kleiner' }).addTo(map);
+  // Knopf zum Einklappen des Menüs: gehört in dieselbe Spalte wie Plus/Minus, direkt darunter (Leaflet setzt Abstand und Ausrichtung selbst)
+  (function () {
+    var LeistenKnopf = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: function () { var k = document.getElementById('leistenknopf'); L.DomEvent.disableClickPropagation(k); return k; }
+    });
+    new LeistenKnopf().addTo(map);
+  })();
   L.control.scale({ position: 'bottomright', imperial: false, maxWidth: 140 }).addTo(map);
   L.control.attribution({ position: 'bottomright', prefix: false })
     .addTo(map).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a> · © GeoBasis-DE / BKG');
@@ -411,6 +420,7 @@
       });
       $('schnellwahl').appendChild(b);
     });
+    $('standtext').textContent = NS.VERSION;
     $('quelle-grenzen').textContent = 'Grenzen: © GeoBasis-DE / BKG (Datenlizenz Deutschland – Namensnennung 2.0).';
     $('quelle-osm').textContent = O ? 'Orte, Straßen, Gewässer, Berge: © OpenStreetMap-Mitwirkende (ODbL), Stand ' + (O.stand || '?') + '.' : '';
   }

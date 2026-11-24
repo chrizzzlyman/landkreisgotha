@@ -33,6 +33,15 @@ Alle Symbole sind eingebaute Vektorgrafiken und die Schriften sind mitgeliefert.
 
 Den Link kannst du auf Tablets oder dem Whiteboard öffnen. Zum Beispiel als Lesezeichen oder als QR-Code.
 
+### Neue Version hochgeladen, aber es ändert sich nichts?
+
+1. **Wo liegen die Dateien?** Im Repository muss `index.html` direkt in der obersten Ebene stehen. Liegt dort nur ein Ordner `gotha-karte` mit den Dateien darin, hat der Upload den Ordner statt seines Inhalts erwischt. Dann bleibt die alte `index.html` im Hauptverzeichnis aktiv.
+2. **Steht der Upload fest?** Nach „Commit changes“ braucht GitHub Pages ein bis zwei Minuten (Reiter **Actions**: grüner Haken).
+3. **Zwischenspeicher:** GitHub erlaubt dem Browser, Dateien bis zu 10 Minuten zu behalten. Neu laden mit **Strg + Umschalt + R** (Mac: Cmd + Umschalt + R) umgeht das. Auf dem Handy hilft ein neuer privater Tab, bei der installierten App: Android-Einstellungen → Apps → die App → Speicher → Daten löschen.
+4. **Welche Version läuft?** Ganz unten im Menü steht „App-Stand“ mit Datum und Versionsnummer. Fehlt die Zeile, läuft noch eine ältere Version.
+
+Seit dem Stand vom 24.11.2026 fragt die App bei jedem Start beim Server nach und lädt neue Dateien sofort. Die Version davor konnte bis zu 10 Minuten alte Dateien zeigen.
+
 ## Als App auf dem Handy oder Tablet installieren
 
 Die Karte ist eine *installierbare Web-App*. Das geht **nur über den GitHub-Pages-Link** (`https://…github.io/…`), nicht mit der Einzeldatei und nicht per Doppelklick auf `index.html`.

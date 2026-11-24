@@ -1,7 +1,8 @@
 /* Service Worker: macht die Karte installierbar und lässt sie ohne Internet starten.
    - Programmdateien: erst das Netz (damit Änderungen sofort ankommen), ohne Netz der gespeicherte Stand.
+     Dabei wird immer beim Server nachgefragt ("no-cache"). Sonst würde der Browser auf GitHub Pages bis zu 10 Minuten lang alte Dateien weiterreichen.
    - Höhenkacheln: einmal geladen, bleiben sie auf dem Gerät (die zuletzt angesehenen Gegenden gehen dann auch offline). */
-var KERN = 'gotha-kern-v1';
+var KERN = 'gotha-kern-v2';
 var KACHELN = 'gotha-kacheln-v1';
 var MAX_KACHELN = 600;
 var DATEIEN = [
@@ -36,7 +37,7 @@ function mitZeitlimit(p, ms) {
 
 function netzZuerst(req) {
   return caches.open(KERN).then(function (cache) {
-    return mitZeitlimit(fetch(req), 6000).then(function (res) {
+    return mitZeitlimit(fetch(req, { cache: 'no-cache' }), 6000).then(function (res) {
       if (res && res.ok) cache.put(req, res.clone());
       return res;
     }).catch(function (err) {
