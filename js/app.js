@@ -46,7 +46,6 @@
   var hatB = STRASSEN.some(function (s) { return s.k === 'B'; });
   var ersteA = (STRASSEN.filter(function (s) { return s.k === 'A'; })[0] || { r: 'A 4' }).r;
   var ersteB = (STRASSEN.filter(function (s) { return s.k === 'B'; })[0] || { r: 'B 7' }).r;
-  var ersteL = (LANDSTR.filter(function (s) { return s.k === 'L'; })[0] || { r: 'L 1026' }).r;
   var SYM = NS.Symbole;
   // farbe = Farbe der Kachel (wenn eingeschaltet), hell = Farbe des Symbolkreises (wenn ausgeschaltet), text = Schriftfarbe auf der Kachel
   var EBENEN = [
@@ -59,7 +58,7 @@
     { id: 'berge', gruppe: 'Natur', sym: 'berg', titel: 'Berge & Täler', farbe: '#8c5a2b', hell: '#f0dcc3', an: false, daten: true },
     { id: 'autobahn', gruppe: 'Straßen', schild: '<span class="schild autobahn">' + esc(ersteA) + '</span>', titel: 'Auto\u00ADbahnen', farbe: '#1d4ed8', hell: '#dbe4ff', an: false, daten: hatA },
     { id: 'bundesstr', gruppe: 'Straßen', schild: '<span class="schild bundesstr">' + esc(ersteB) + '</span>', titel: 'Bundes\u00ADstraßen', farbe: '#ffd43b', hell: '#fff3bf', text: '#16304a', an: false, daten: hatB },
-    { id: 'landstr', gruppe: 'Straßen', breit: true, schild: '<span class="schild landstr">' + esc(ersteL) + '</span>', titel: 'Landstraßen', farbe: '#4a5b6e', hell: '#e8edf2', an: false, daten: LANDSTR.length > 0 }
+    { id: 'landstr', gruppe: 'Straßen', breit: true, sym: 'strasse', titel: 'Landstraßen', farbe: '#4a5b6e', hell: '#e8edf2', an: false, daten: LANDSTR.length > 0 }
   ];
   var an = {};
   EBENEN.forEach(function (e) { an[e.id] = e.daten && e.an; });
@@ -266,15 +265,15 @@
 
   // ------------------------------------------------------------ Ebene: Landstraßen (Landesstraßen L, Kreisstraßen K, weitere Durchgangsstraßen)
   var LAND_STIL = {
-    L: { rand: '#4d5d70', kern: '#ffffff', wr: 7.6, wk: 4.6 },
-    K: { rand: '#72839a', kern: '#ffffff', wr: 6.0, wk: 3.4 },
-    W: { rand: '#9aa8b8', kern: '#ffffff', wr: 4.4, wk: 2.2 }
+    L: { rand: '#8896a6', kern: '#ffffff', wr: 4.0, wk: 2.2 },
+    K: { rand: '#9faab8', kern: '#ffffff', wr: 3.2, wk: 1.6 },
+    W: { rand: '#b3bcc7', kern: '#ffffff', wr: 2.6, wk: 1.2 }
   };
   var gruppeLandstr = L.layerGroup(), gruppeWeitere = L.layerGroup(), landLinien = [];
   (function () {
     function paar(teile, st, id) {
-      var rand = L.polyline(teile, { pane: 'landRandPane', color: st.rand, weight: st.wr, lineCap: 'round', lineJoin: 'round', interactive: false });
-      var kern = L.polyline(teile, { pane: 'landKernPane', color: st.kern, weight: st.wk, lineCap: 'round', lineJoin: 'round', interactive: false });
+      var rand = L.polyline(teile, { pane: 'landRandPane', color: st.rand, weight: st.wr, opacity: 0.85, lineCap: 'round', lineJoin: 'round', interactive: false });
+      var kern = L.polyline(teile, { pane: 'landKernPane', color: st.kern, weight: st.wk, opacity: 0.85, lineCap: 'round', lineJoin: 'round', interactive: false });
       return { rand: rand, kern: kern, st: st };
     }
     var w = paar(WEITERE.map(function (t) { return t.map(ll); }), LAND_STIL.W);
@@ -453,9 +452,9 @@
     if (an.autobahn) eintrag('<span class="schild autobahn">' + esc(ersteA) + '</span>', 'Autobahn');
     if (an.bundesstr) eintrag('<span class="schild bundesstr">' + esc(ersteB) + '</span>', 'Bundesstraße');
     if (an.landstr) {
-      eintrag('<span class="schild landstr">' + esc(ersteL) + '</span>', 'Landesstraße');
-      var ersteK = (LANDSTR.filter(function (s) { return s.k === 'K'; })[0] || { r: 'K 4' }).r;
-      eintrag('<span class="schild kreisstr">' + esc(ersteK) + '</span>', 'Kreisstraße');
+      var strasse = function (st) { return svg(50, 14, '<path d="M3 8 Q 14 2 25 7 T 47 6" fill="none" stroke="' + st.rand + '" stroke-width="' + (st.wr + 1) + '" stroke-linecap="round"/><path d="M3 8 Q 14 2 25 7 T 47 6" fill="none" stroke="' + st.kern + '" stroke-width="' + st.wk + '" stroke-linecap="round"/>'); };
+      eintrag(strasse(LAND_STIL.L), 'Landesstraße');
+      eintrag(strasse(LAND_STIL.K), 'Kreisstraße');
     }
     if (an.berge) {
       gruppe('Berge und Täler');
@@ -615,13 +614,6 @@
         out.push({ schluessel: 's:' + s.r, text: s.r, klasse: 'schild ' + (s.k === 'A' ? 'autobahn' : 'bundesstr'), art: 'schild', linien: s._ll, prio: s.k === 'A' ? 52 : 50, groesse: 13, fett: '900', maxAnzahl: 3, abstandPx: 340 });
       });
     }
-    if (an.landstr && !verb.strasse) {
-      LANDSTR.forEach(function (s) {
-        var land = s.k === 'L';
-        if (z < (land ? 11 : 11.5)) return;
-        out.push({ schluessel: 's:' + s.r, text: s.r, klasse: 'schild ' + (land ? 'landstr' : 'kreisstr'), art: 'schild', linien: s._ll, prio: land ? 48 : 46, groesse: land ? 13 : 12, fett: '900', maxAnzahl: 2, abstandPx: 300 });
-      });
-    }
     return out;
   }
   var beschriftung = new NS.Beschriftung(map, { holeEtiketten: holeEtiketten });
@@ -750,6 +742,22 @@
     var offen = document.body.classList.toggle('menue-offen');
     $('menueknopf').setAttribute('aria-expanded', offen ? 'true' : 'false');
   });
+  // Seitenmenü am Computer/Tablet quer einklappen: Die Karte wird breiter, der Kartenausschnitt bleibt dabei auf dem Bildschirm stehen.
+  function leisteSetzen(zu) {
+    var kb = $('karte'), r0 = kb.getBoundingClientRect(), c0 = map.getCenter(), knopf = $('leistenknopf');
+    document.body.classList.toggle('leiste-zu', zu);
+    document.body.classList.toggle('leiste-auf', !zu);
+    knopf.setAttribute('aria-expanded', zu ? 'false' : 'true');
+    knopf.setAttribute('aria-label', zu ? 'Menü zeigen' : 'Menü einklappen');
+    knopf.title = zu ? 'Menü zeigen' : 'Menü einklappen';
+    knopf.querySelector('.lk-symbol').innerHTML = NS.Symbole.svg(zu ? 'menue' : 'einklappen', 24);
+    var r1 = kb.getBoundingClientRect();
+    map.invalidateSize({ pan: false, animate: false });
+    var jetzt = map.latLngToContainerPoint(c0), soll = L.point(r0.left + r0.width / 2 - r1.left, r0.height / 2);
+    map.panBy(jetzt.subtract(soll), { animate: false });
+    beschriftung.aktualisiere();
+  }
+  $('leistenknopf').addEventListener('click', function () { leisteSetzen(!document.body.classList.contains('leiste-zu')); });
   function zeigeGanz() {      // ganzen Landkreis zeigen (unter der Quizleiste, falls sie offen ist)
     var q = $('quizleiste'), oben = q.hidden ? 0 : q.offsetHeight + 14;
     map.flyToBounds(grenzen.pad(0.1), { duration: 0.7, paddingTopLeft: [0, oben] });

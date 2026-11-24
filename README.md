@@ -12,9 +12,11 @@ Eine Karten-App für Grundschulkinder (Klasse 3 und 4). Die Kinder schalten Ansi
 | Flüsse & Seen | größere Flüsse, Kanäle und Talsperren |
 | Berge & Täler | Höhenkarte (Tiefland grün, Berge braun) und die 8 ausgewählten Berge mit Höhe |
 | Autobahnen / Bundesstraßen | blaue und gelbe Straßen mit Schildern (z. B. „A 4") |
-| Landstraßen | Landesstraßen (L) und Kreisstraßen (K) als weiße Straßen mit Schildern, dazu weitere Durchgangsstraßen: so sieht man, wie man von Ort zu Ort kommt |
+| Landstraßen | Landesstraßen (L) und Kreisstraßen (K) als dünne, graue Straßen ohne Beschriftung, dazu weitere Durchgangsstraßen: so sieht man, wie man von Ort zu Ort kommt. Beim Antippen einer Straße erscheint ihr Name (z. B. „L 1026“) |
 
 Dazu gibt es eine **Ortssuche**, eine **Legende** („Was bedeutet das?"), eine **Schnellauswahl** und ein **Quiz „Wo liegt …?"** mit Sternen (Städte, Gemeinden, Dörfer, Berge, Flüsse).
+
+**Menü einklappen:** Am Computer und auf dem Tablet im Querformat gibt es unter den Zoom-Knöpfen einen Knopf, der das Seitenmenü ein- und ausklappt. Dann ist die Karte so breit wie das Fenster, und der Kartenausschnitt bleibt dabei stehen. Auf dem Handy und auf dem hochkant gehaltenen Tablet öffnet und schließt der Menüknopf oben links in der Kopfzeile das Menü.
 
 **Als Bild speichern:** Der Knopf mit dem Fotoapparat (oben rechts auf der Karte) speichert die gerade sichtbare Karte als JPEG-Datei, wahlweise mit Titel und Legende oder nur die Karte. Maßstab, Nordpfeil und Quellenangabe sind immer dabei. Das Bild entsteht im Browser, es wird nichts hochgeladen, und es geht auch ohne Internet (nur die Höhenkarte selbst braucht Internet).
 
@@ -71,7 +73,7 @@ python3 tools/einzeldatei_bauen.py
 
 Schritt 3 braucht die Ergebnisse von Schritt 1 und 2. Er verbindet Wohn-, Gewerbe- und Industrieflächen, die weniger als etwa 90 m auseinanderliegen, zu einer Ortsfläche, rundet die Ecken ab, vereinfacht sie und ordnet sie dem nächsten Ortspunkt zu. Flächen ohne Ort (z. B. einzelne Gewerbegebiete auf dem Feld) werden weggelassen. Die Werte stehen am Anfang von `tools/build_data.py` (`SIED_PUFFER_M`, `SIED_RUNDEN_M`, `SIED_TOL_M` usw.). Das Skript listet am Ende Flächen mit mehreren Orten auf (z. B. Gotha mit Siebleben) und Orte ohne Fläche.
 
-Schritt 4 sammelt die Straßen mit Nummer L oder K und schreibt außerdem alle `secondary`/`tertiary`-Straßen ohne Nummer (meist Ortsdurchfahrten wie „Hauptstraße") als dünne „weitere Straßen", damit die Linien nicht an jedem Ortsschild abreißen. Kurze Straßen (unter 1 km im Landkreis) werden weggelassen. Ein Tippfehler in OpenStreetMap (Eintrag „1026" statt „L 1026") wird in `REF_KORREKTUR` ausgebessert. Am Ende nennt das Skript Orte, die mehr als 300 m von der nächsten Straße entfernt liegen. Die weiteren Straßen erscheinen erst ab einer bestimmten Zoomstufe, die Schilder der Kreisstraßen etwas später als die der Landesstraßen.
+Schritt 4 sammelt die Straßen mit Nummer L oder K und schreibt außerdem alle `secondary`/`tertiary`-Straßen ohne Nummer (meist Ortsdurchfahrten wie „Hauptstraße") als dünne „weitere Straßen", damit die Linien nicht an jedem Ortsschild abreißen. Kurze Straßen (unter 1 km im Landkreis) werden weggelassen. Ein Tippfehler in OpenStreetMap (Eintrag „1026" statt „L 1026") wird in `REF_KORREKTUR` ausgebessert. Am Ende nennt das Skript Orte, die mehr als 300 m von der nächsten Straße entfernt liegen. Die weiteren Straßen erscheinen erst ab einer bestimmten Zoomstufe. Die Landstraßen haben bewusst keine Schilder auf der Karte, damit sie dezent bleiben. Name und Länge stehen im Fenster, das beim Antippen aufgeht. Breite und Farbe stehen in `LAND_STIL` in `js/app.js`.
 
 Das Skript gibt dabei Kontrollwerte aus und bricht bei Unstimmigkeiten ab: Fläche des Kreises gegen die Summe der Gemeinden, außerdem ein Vergleich der Gemeindenamen mit OpenStreetMap, die Liste der gefundenen Straßen, Gewässer und Seen.
 

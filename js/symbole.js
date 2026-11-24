@@ -17,6 +17,7 @@
     suche: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
     haus: '<path d="M3.5 11.5 12 4l8.5 7.5M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>',
     menue: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    einklappen: '<path d="M4.5 4.5v15"/><path d="M19.5 12H9M13.2 7.6 8.8 12l4.4 4.4"/>',
     schliessen: '<path d="m6 6 12 12M18 6 6 18"/>',
     haken: '<path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="3"/>',
     quiz: '<path d="M12 21.5S5.5 16 5.5 10.2a6.5 6.5 0 0 1 13 0C18.5 16 12 21.5 12 21.5z" fill="currentColor" fill-opacity=".18"/><circle cx="12" cy="10.2" r="2.4"/>',

@@ -126,8 +126,6 @@ a { color: var(--blau); }
   background: var(--ebene-hell); color: var(--ebene-farbe); transition: background-color .15s, color .15s;
 }
 .ebene .bild.schildbild { width: 48px; height: 36px; border-radius: 0; background: none; }
-.ebene .bild.schildbild.langschild { width: auto; }
-.ebene .bild.schildbild .schild.landstr { min-width: 0; padding: 2px 6px; font-size: .8rem; white-space: nowrap; }
 .ebene .titel { flex: 1; min-width: 0; hyphens: manual; }
 .ebene .haken { position: absolute; top: -7px; right: -5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--wiese); color: #fff; box-shadow: 0 0 0 2.5px #fff; opacity: 0; transform: scale(.4); transition: opacity .15s, transform .15s; }
 .ebene[aria-pressed="true"] { background: var(--ebene-farbe); border-color: var(--ebene-farbe); color: var(--ebene-text, #fff); }
@@ -142,8 +140,6 @@ a { color: var(--blau); }
 .schild { display: inline-block; min-width: 46px; padding: 2px 8px; border-radius: 6px; text-align: center; font-weight: 900; font-size: 1rem; line-height: 1.25; letter-spacing: .02em; }
 .schild.autobahn { background: #1d4ed8; color: #fff; box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #1d4ed8; }
 .schild.bundesstr { background: #ffd43b; color: #111; box-shadow: inset 0 0 0 2px #111; }
-.schild.landstr { background: #fff; color: #16304a; box-shadow: inset 0 0 0 2px #4d5d70; }
-.schild.kreisstr { background: #fff; color: #16304a; box-shadow: inset 0 0 0 2px #72839a; }
 .ebene[aria-pressed="true"] .schild.autobahn { box-shadow: inset 0 0 0 2px #fff; }
 
 /* Schnellauswahl */
@@ -186,6 +182,22 @@ a { color: var(--blau); }
 .leaflet-bar a:hover { background: var(--himmel); color: var(--tinte); }
 .leaflet-control-scale-line { font-weight: 800; font-size: 13px; border-width: 2px; border-color: var(--tinte); background: rgba(255, 255, 255, .88); color: var(--tinte); }
 .leaflet-control-attribution { font-size: 11px; background: rgba(255, 255, 255, .8) !important; border-radius: 8px 0 0 0; }
+
+/* Menü ein- und ausklappen (Seitenleiste fest sichtbar: Computer, Tablet quer) */
+#leistenknopf {
+  position: absolute; left: 8px; top: 114px; z-index: 900;
+  display: grid; place-items: center; width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 16px; background: var(--papier); color: var(--tinte); box-shadow: var(--schatten);
+}
+#leistenknopf:hover { background: var(--himmel); }
+#leistenknopf:active { transform: scale(.94); }
+@media (min-width: 921px) {
+  body.leiste-zu #app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "karte"; }
+  body.leiste-zu #seitenleiste { display: none; }
+  body.leiste-auf #seitenleiste { animation: leisteRein .22s ease-out; }
+}
+@keyframes leisteRein { from { transform: translateX(-28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.leiste-auf #seitenleiste { animation: none; } }
 
 /* Knöpfe oben rechts: ganzer Landkreis + Kompass */
 #kartenknoepfe { position: absolute; right: 14px; top: 14px; z-index: 900; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
@@ -268,8 +280,6 @@ a { color: var(--blau); }
 .etikett.schild { padding: 1px 6px; border-radius: 5px; font-weight: 900; text-shadow: none; letter-spacing: .02em; box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
 .etikett.schild.autobahn { background: #1d4ed8; color: #fff; border: 2px solid #fff; }
 .etikett.schild.bundesstr { background: #ffd43b; color: #111; border: 2px solid #111; }
-.etikett.schild.landstr { background: #fff; color: #16304a; border: 2px solid #4d5d70; }
-.etikett.schild.kreisstr { background: #fff; color: #16304a; border: 2px solid #72839a; padding: 0 5px; }
 .etikett.quizziel { font-weight: 900; color: #1b6e30; }
 
 /* Pulsierende Markierung für gefundene Orte */
@@ -401,6 +411,7 @@ a { color: var(--blau); }
   #kompass svg { width: 46px; height: 46px; }
   #heimknopf, #bildknopf { padding: 0; width: 48px; justify-content: center; }
   #heimknopf .hk-text, #bildknopf .hk-text { display: none; }
+  #leistenknopf { display: none; }
   #bildmenue { top: auto; bottom: calc(100% + 8px); width: min(264px, calc(100vw - 24px)); }
   #legende { bottom: 30px; }
 }
@@ -420,4 +431,4 @@ a { color: var(--blau); }
   .ebene { padding: 6px 8px 6px 6px; gap: 7px; font-size: .92rem; }
   .ebene .bild { width: 38px; height: 38px; }
 }
-@media print { #seitenleiste, #kopf, .karte-box, #kartenknoepfe { display: none !important; } #app { display: block; } #karte { position: static; height: 100vh; } }
+@media print { #seitenleiste, #kopf, .karte-box, #kartenknoepfe, #leistenknopf { display: none !important; } #app { display: block; } #karte { position: static; height: 100vh; } }
